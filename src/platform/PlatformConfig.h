@@ -168,6 +168,9 @@
 #endif
 
 #ifndef PLATFORM_HAS_VIRTUAL_KEYBOARD
+// Switch has controller text-button hints, but no VirtualKeyboard backend yet.
+// Do not opt it into the shared overlay until it supplies the implementation:
+// VirtualKeyboard.h/cpp currently compile only for PS2 and Wii.
 #  define PLATFORM_HAS_VIRTUAL_KEYBOARD (PLATFORM_PS2 || PLATFORM_WII)
 #endif
 
@@ -191,7 +194,7 @@
 #endif
 
 #ifndef PLATFORM_PC
-#  if PLATFORM_PS2 || PLATFORM_WII
+#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH
 #    define PLATFORM_PC 0
 #  else
 #    define PLATFORM_PC 1
