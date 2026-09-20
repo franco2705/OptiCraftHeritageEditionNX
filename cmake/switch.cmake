@@ -13,7 +13,8 @@ if(SWITCH_BRINGUP)
     set(SWITCH_ARTIFACT_NAME "OptiCraft-bringup")
     message(STATUS "Switch build: BRINGUP diagnostics")
 else()
-    mcbeta_collect_platform_sources(SWITCH_SOURCES switch)
+    mcbeta_collect_platform_sources(SWITCH_SOURCES s
+    witch)
     set(SWITCH_MINIZIP_SOURCES
         "${CMAKE_SOURCE_DIR}/external/zlib/contrib/minizip/ioapi.c"
         "${CMAKE_SOURCE_DIR}/external/zlib/contrib/minizip/unzip.c")
@@ -43,18 +44,36 @@ target_link_directories(OptiCraft PRIVATE "${LIBNX}/lib")
 set(_SWITCH_LIBS nx m)
 if(NOT SWITCH_BRINGUP)
     set(SWITCH_PORTLIBS "${DEVKITPRO}/portlibs/switch")
+    find_path(SWITCH_OPENGL_INCLUDE_DIR EGL/egl.h
+        HINTS "${SWITCH_PORTLIBS}/include"
+        NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
     find_library(SWITCH_ZLIB NAMES z HINTS "${SWITCH_PORTLIBS}/lib"
+        NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+    find_library(SWITCH_GLAD NAMES glad HINTS "${SWITCH_PORTLIBS}/lib"
+        NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+    find_library(SWITCH_EGL NAMES EGL HINTS "${SWITCH_PORTLIBS}/lib"
+        NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+    find_library(SWITCH_GLAPI NAMES glapi HINTS "${SWITCH_PORTLIBS}/lib"
+        NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+    find_library(SWITCH_DRM_NOUVEAU NAMES drm_nouveau HINTS "${SWITCH_PORTLIBS}/lib"
         NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
     if(NOT SWITCH_ZLIB)
         message(FATAL_ERROR
             "Switch full game requires switch-zlib. Install it with: dkp-pacman -S switch-zlib")
     endif()
-    target_include_directories(OptiCraft PRIVATE "${SWITCH_PORTLIBS}/include")
+    if(NOT SWITCH_OPENGL_INCLUDE_DIR OR NOT SWITCH_GLAD OR NOT SWITCH_EGL OR
+       NOT SWITCH_GLAPI OR NOT SWITCH_DRM_NOUVEAU)
+        message(FATAL_ERROR
+            "Switch full game requires the Switch OpenGL portlibs. Install them with: "
+            "dkp-pacman -S switch-mesa switch-glad")
+    endif()
+    target_include_directories(OptiCraft PRIVATE "${SWITCH_OPENGL_INCLUDE_DIR}")
     target_link_directories(OptiCraft PRIVATE "${SWITCH_PORTLIBS}/lib")
     set_source_files_properties(
         "${CMAKE_SOURCE_DIR}/src/switch/render/SwitchGraphicsContext.cpp"
         PROPERTIES COMPILE_DEFINITIONS __SWITCH__)
-    list(PREPEND _SWITCH_LIBS glad EGL glapi drm_nouveau)
+    list(PREPEND _SWITCH_LIBS
+        "${SWITCH_GLAD}" "${SWITCH_EGL}" "${SWITCH_GLAPI}" "${SWITCH_DRM_NOUVEAU}")
     list(APPEND _SWITCH_LIBS z)
 endif()
 target_link_libraries(OptiCraft PRIVATE ${_SWITCH_LIBS})

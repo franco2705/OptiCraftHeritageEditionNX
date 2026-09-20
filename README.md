@@ -38,6 +38,13 @@ Install the following before configuring:
 - The Switch OpenGL portlibs supplied with `switch-dev` (`EGL`, `glad`,
   `glapi`, and `drm_nouveau`) for the full game.
 
+Some devkitPro installations do not include the OpenGL portlibs in the base
+`switch-dev` group. Install the explicit packages when `EGL/egl.h` is missing:
+
+```bash
+sudo dkp-pacman -S switch-mesa switch-glad
+```
+
 Use the devkitPro MSYS shell on Windows rather than a generic MSYS2 shell. If
 devkitPro is not installed at `/opt/devkitpro` or `C:/devkitPro`, export
 `DEVKITPRO` with its installation root before running CMake.
