@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 class SwitchGraphicsContext {
 public:
  static SwitchGraphicsContext& instance();
@@ -8,7 +7,4 @@ public:
 private:
  SwitchGraphicsContext() = default;
  bool alive_ = false;
- std::uint32_t* pixels();
-private:
- SwitchGraphicsContext() = default; void* framebuffer_ = nullptr; std::uint32_t* pixels_ = nullptr; bool alive_ = false;
 };

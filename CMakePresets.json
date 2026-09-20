@@ -145,8 +145,6 @@
       "name": "switch-release",
       "displayName": "Nintendo Switch Homebrew full game (Release)",
       "description": "Full-game development build using libnx platform backends.",
-      "displayName": "Nintendo Switch Homebrew (playable target)",
-      "description": "Full game using the libnx input, lifecycle, SD storage, and native graphics backends.",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/switch-release",
       "toolchainFile": "${sourceDir}/cmake/switch_toolchain.cmake",
@@ -244,7 +242,6 @@
     {
       "name": "switch-release",
       "displayName": "Build Nintendo Switch full game (Release)",
-      "displayName": "Build Nintendo Switch playable target",
       "configurePreset": "switch-release",
       "jobs": 0
     },

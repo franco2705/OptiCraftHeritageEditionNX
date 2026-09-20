@@ -11,7 +11,6 @@ void setTitle(const jstring&) {} void setFullscreen(bool) {}
 bool isCloseRequested() { return !SwitchGraphicsContext::instance().alive(); }
 bool isVisible() { return true; } bool isActive() { return true; }
 void processMessages() { switchInputPoll(); }
-void processMessages() {}
 void swapBuffers() { SwitchGraphicsContext::instance().present(); }
 void update(bool process) { swapBuffers(); if (process) processMessages(); }
 int_t getX() { return 0; } int_t getY() { return 0; }
