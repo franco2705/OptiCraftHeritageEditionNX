@@ -13,8 +13,23 @@ if(SWITCH_BRINGUP)
     set(SWITCH_ARTIFACT_NAME "OptiCraft-bringup")
     message(STATUS "Switch build: BRINGUP diagnostics")
 else()
-    mcbeta_collect_platform_sources(SWITCH_SOURCES s
-    witch)
+    mcbeta_collect_platform_sources(SWITCH_SOURCES switch)
+    # These three translation units provide symbols that are mandatory at the
+    # final link boundary. Keep them explicit rather than relying only on the
+    # recursive platform glob: stale/conflict-resolved CMake source lists can
+    # otherwise produce an almost-complete build that fails only at the final
+    # ELF link with missing main, Resource::getResource, and renderer symbols.
+    set(SWITCH_REQUIRED_RUNTIME_SOURCES
+        "${CMAKE_SOURCE_DIR}/src/switch/main_switch.cpp"
+        "${CMAKE_SOURCE_DIR}/src/switch/java/Resource_switch.cpp"
+        "${CMAKE_SOURCE_DIR}/src/switch/render/SwitchLegacyRenderer.cpp")
+    foreach(_switch_required_source IN LISTS SWITCH_REQUIRED_RUNTIME_SOURCES)
+        if(NOT EXISTS "${_switch_required_source}")
+            message(FATAL_ERROR "Required Switch runtime source is missing: ${_switch_required_source}")
+        endif()
+    endforeach()
+    list(APPEND SWITCH_SOURCES ${SWITCH_REQUIRED_RUNTIME_SOURCES})
+    list(REMOVE_DUPLICATES SWITCH_SOURCES)
     set(SWITCH_MINIZIP_SOURCES
         "${CMAKE_SOURCE_DIR}/external/zlib/contrib/minizip/ioapi.c"
         "${CMAKE_SOURCE_DIR}/external/zlib/contrib/minizip/unzip.c")
