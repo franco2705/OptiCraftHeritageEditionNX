@@ -8,7 +8,7 @@
 #include "platform/PlatformConfig.h"
 #include "platform/RenderAPI.h"
 
-#if PLATFORM_PC
+#if PLATFORM_PC && !PLATFORM_SWITCH
 #include "pc/render/PcRenderBackend.h"
 #include <glad/glad.h>
 #include <SDL.h>
@@ -17,7 +17,7 @@
 
 namespace
 {
-#if PLATFORM_PC
+#if PLATFORM_PC && !PLATFORM_SWITCH
 int g_gradeTexture = 0;
 int g_gradeTextureWidth = 0;
 int g_gradeTextureHeight = 0;
@@ -257,7 +257,7 @@ void legacyLookApplyWorldGrade(Minecraft *mc)
 #if PLATFORM_WII
     if (mc != nullptr && mc->gameSettings != nullptr && mc->gameSettings->legacyLook)
         renderSetLegacyPresentationGamma(true);
-#elif PLATFORM_PC
+#elif PLATFORM_PC && !PLATFORM_SWITCH
     if (pcRenderBackendIsDirect3D9())
         return;
     if (!legacyLookGradeFramebufferPassEnabled())

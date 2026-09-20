@@ -1,4 +1,4 @@
-#if defined(PS2_PLATFORM) || defined(WII_PLATFORM)
+#if defined(PS2_PLATFORM) || defined(WII_PLATFORM) || defined(SWITCH_PLATFORM)
 
 #include "platform/storage/PosixFileSystem.h"
 #include "platform/storage/PathUtils.h"
@@ -226,4 +226,4 @@ bool posixAppendFile(const std::string& path, const void* data, std::size_t leng
 
 } // namespace PlatformStorage
 
-#endif // PS2_PLATFORM || WII_PLATFORM
+#endif // PS2_PLATFORM || WII_PLATFORM || SWITCH_PLATFORM
