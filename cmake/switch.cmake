@@ -13,7 +13,8 @@ if(SWITCH_BRINGUP)
     set(SWITCH_ARTIFACT_NAME "OptiCraft-bringup")
     message(STATUS "Switch build: BRINGUP diagnostics")
 else()
-    mcbeta_collect_platform_sources(SWITCH_SOURCES switch)
+    mcbeta_collect_platform_sources(SWITCH_SOURCES s
+    witch)
     set(SWITCH_MINIZIP_SOURCES
         "${CMAKE_SOURCE_DIR}/external/zlib/contrib/minizip/ioapi.c"
         "${CMAKE_SOURCE_DIR}/external/zlib/contrib/minizip/unzip.c")
