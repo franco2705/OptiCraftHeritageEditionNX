@@ -44,19 +44,21 @@ The Wii build uses devkitPPC/libogc and a native GX rendering path. The Homebrew
 apps/OptiCraft/
 ```
 
-### Nintendo Switch Homebrew (bring-up)
+### Nintendo Switch Homebrew
 
-The native Switch port starts with an independent `devkitA64`/`libnx` bring-up
-application. It is not a Wii or PS2 conversion: the final port will provide
-Switch-specific graphics, input, audio, storage, and lifecycle backends. The
-bring-up binary checks video, controller input, SD storage, and the applet exit
-path before shared game code is introduced.
-
-Its deployable output is:
+The Switch port has two deliberately separate paths: a small `devkitA64`/libnx
+hardware diagnostic and the full game. The game creates a native EGL/OpenGL
+context through the Switch Mesa/Nouveau portlibs and uses Switch-specific graphics,
+Joy-Con/Pro Controller input, SD storage, and applet lifecycle backends; it does
+not reuse either legacy console renderer. Both paths produce:
 
 ```text
 bin/switch/OptiCraft.nro
 ```
+
+The full-game renderer translates the shared legacy matrix, texture, alpha-test,
+interleaved-mesh, and retained chunk-list operations into a shader-backed OpenGL
+3.3 pipeline running inside that native context.
 
 ## Source layout
 
@@ -133,17 +135,58 @@ Use `wii-debug` for a debug build and `wii-bringup` for the minimal hardware/too
 
 ### Nintendo Switch Homebrew
 
-Install the devkitPro `switch-dev` package group, then configure and build the
-native smoke test:
+Install the devkitPro `switch-dev` package group. Two presets intentionally keep
+hardware diagnosis separate from the game:
 
 ```text
+# Minimal libnx/controller/framebuffer diagnostic
 cmake --preset switch-bringup
 cmake --build --preset switch-bringup
+
+# Full-game development target (Release)
+cmake --preset switch-release
+cmake --build --preset switch-release
+cmake --build build/switch-release --target switch-data
+
+# Full-game development target (Debug)
+cmake --preset switch-debug
+cmake --build --preset switch-debug
+cmake --build build/switch-debug --target switch-data
 ```
 
-Copy `bin/switch/OptiCraft.nro` to `sdmc:/switch/OptiCraft/OptiCraft.nro`.
-Use a Homebrew-enabled Switch only; this project does not provide instructions
-for modifying a console.
+Alternatively, the repository helper performs configure, build, and data
+staging in the correct order, including in a fresh checkout with no CMake
+cache:
+
+```text
+./build_switch.sh debug --data-root /path/to/runtime-data
+```
+
+Use `release` or `bringup` instead of `debug` as needed. Pass `--no-data` when
+only the NRO should be built.
+
+Each build directory is created by its matching configure command. If CMake
+reports `could not load cache`, run `cmake --preset switch-debug` (or
+`switch-release`) before the corresponding build command.
+
+Both modes run `nacptool` and `elf2nro` and produce
+`bin/switch/OptiCraft.nro`. Copy it to
+`sdmc:/switch/OptiCraft/OptiCraft.nro`. The playable target reads runtime data
+from `sdmc:/switch/OptiCraft/data`. The `switch-data` target stages matching
+host-side `assets/` and `resources/` trees from `data/`. If those runtime files
+live elsewhere, configure with `-DSWITCH_DATA_ROOT=/path/to/runtime-data`.
+Saves and options are stored under
+`sdmc:/switch/OptiCraft/.minecraft`.
+
+The initial controller mapping uses the left stick for movement and the right
+stick for camera/cursor motion. `A` jumps or confirms, `B` cancels, `X` opens
+the inventory, `Y` drops the selected item, `ZR` attacks, `ZL` uses an item,
+`+` opens the pause menu, and the D-pad supplies menu navigation. The Home
+button and applet lifecycle remain managed by libnx.
+
+`switch-bringup` remains the recommended first boot on new hardware; it does not
+include the game and is only a diagnostic. Use a Homebrew-enabled Switch only;
+this project does not provide instructions for modifying a console.
 
 ## Development notes
 

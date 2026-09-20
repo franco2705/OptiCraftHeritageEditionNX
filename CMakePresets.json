@@ -142,6 +142,29 @@
       }
     },
     {
+      "name": "switch-release",
+      "displayName": "Nintendo Switch Homebrew full game (Release)",
+      "description": "Full-game development build using libnx platform backends.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/switch-release",
+      "toolchainFile": "${sourceDir}/cmake/switch_toolchain.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "PLATFORM": "SWITCH",
+        "SWITCH_BRINGUP": "OFF"
+      }
+    },
+    {
+      "name": "switch-debug",
+      "displayName": "Nintendo Switch Homebrew full game (Debug)",
+      "description": "Debug full-game build using libnx platform backends.",
+      "inherits": "switch-release",
+      "binaryDir": "${sourceDir}/build/switch-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
       "name": "switch-bringup",
       "displayName": "Nintendo Switch Homebrew Bring-up (aarch64)",
       "description": "Native Nintendo Switch Homebrew smoke test via devkitA64 + libnx. Set DEVKITPRO if it is not installed at /opt/devkitpro.",
@@ -214,6 +237,18 @@
       "name": "wii-bringup",
       "displayName": "Build Wii Bring-up",
       "configurePreset": "wii-bringup",
+      "jobs": 0
+    },
+    {
+      "name": "switch-release",
+      "displayName": "Build Nintendo Switch full game (Release)",
+      "configurePreset": "switch-release",
+      "jobs": 0
+    },
+    {
+      "name": "switch-debug",
+      "displayName": "Build Nintendo Switch full game (Debug)",
+      "configurePreset": "switch-debug",
       "jobs": 0
     },
     {
