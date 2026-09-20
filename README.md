@@ -1,135 +1,180 @@
-# OptiCraft Heritage
+# OptiCraft Heritage — Nintendo Switch Homebrew
 
-OptiCraft Heritage is a heavily modified, clean-room C++ implementation of classic Minecraft-era gameplay designed around portability, low-end hardware, and console-specific optimization.
+OptiCraft Heritage is a clean-room C++ implementation of classic Minecraft-era
+gameplay. This repository's primary documented target is a **native Nintendo
+Switch Homebrew NRO**, built with devkitA64 and libnx. The port uses native
+Switch input, SD-card paths, applet lifecycle handling, and a native framebuffer
+backend; it does not run through an emulator.
 
-This repository is not intended to be a line-for-line source translation. The runtime, platform layers, rendering paths, input backends, storage systems, user interface, asset loading, memory policies, and console support have been extensively reworked for the needs of this project.
+The project is independently implemented and is not affiliated with, endorsed
+by, or sponsored by Mojang Studios or Microsoft.
 
-## Project goals
+> **Console safety:** use this software only on a Switch that is already
+> Homebrew-enabled. This repository does not provide instructions for modifying
+> a console or bypassing platform security.
 
-- Keep the implementation portable across desktop PC, PlayStation 2, Nintendo Wii, and native Nintendo Switch Homebrew.
-- Preserve the intended classic gameplay and visual behavior where practical while allowing platform-specific adaptations.
-- Run on constrained hardware through aggressive memory, rendering, chunk, and asset-loading optimizations.
-- Keep platform code isolated behind explicit backends instead of scattering host-specific logic through the game code.
-- Maintain a debuggable and production-oriented C++17 codebase.
+## What is built
 
-## Clean-room implementation
+Two Switch presets are intentionally available:
 
-OptiCraft Heritage is developed as a clean-room implementation. The project code is independently implemented in C/C++ and is heavily modified around its own runtime and platform architecture.
+| Preset | Purpose | Output |
+| --- | --- | --- |
+| `switch-bringup` | Small libnx hardware diagnostic: controller, framebuffer, SD mount, and toolchain smoke test. It does not start the game. | `bin/switch/OptiCraft-bringup.nro` |
+| `switch-release` | The full native game target, including the Switch platform backends. | `bin/switch/OptiCraft.nro` |
 
-The project does not rely on original proprietary game source code as part of its implementation. Compatibility-oriented behavior may be reproduced from observable behavior, documented formats, protocol behavior, and independently developed interfaces.
+Both builds produce a Homebrew NRO with distinct artifact names, so building
+the diagnostic cannot overwrite the playable NRO. CMake creates its NACP
+metadata with `nacptool` and packages the linked ELF with `elf2nro`. The full
+target additionally requires Switch zlib for the region/minizip code.
 
-This project is not affiliated with, endorsed by, or sponsored by Mojang Studios or Microsoft.
+## Requirements
 
-## Supported targets
+Install these before configuring the project:
 
-### PC
+- CMake **3.21+** and Ninja.
+- Git, including the repository submodules.
+- devkitPro's Switch development environment: `devkitA64`, `libnx`, and the
+  Switch tools that provide `elf2nro` and `nacptool`.
+- `switch-zlib` for `switch-release`. It is not required for `switch-bringup`.
 
-The desktop build uses SDL2, OpenGL, and the shared platform abstraction layer. A dedicated 32-bit legacy profile is available for older SSE2-class CPUs and legacy OpenGL hardware.
+In the devkitPro shell, verify the installation before building:
 
-### PlayStation 2
-
-The PS2 build uses a native platform backend with PS2SDK support, GS-specific rendering, console-aware memory policies, asynchronous asset loading, platform storage, controller input, and optional VU-assisted terrain paths.
-
-The expected USB application directory is:
-
-```text
-mass:/OptiCraftHeritage/
+```bash
+echo "$DEVKITPRO"
+test -x "$DEVKITPRO/devkitA64/bin/aarch64-none-elf-g++" && echo "devkitA64: OK"
+test -f "$DEVKITPRO/libnx/include/switch.h" && echo "libnx: OK"
+test -x "$DEVKITPRO/tools/bin/elf2nro" && echo "elf2nro: OK"
+test -x "$DEVKITPRO/tools/bin/nacptool" && echo "nacptool: OK"
+test -f "$DEVKITPRO/portlibs/switch/lib/libz.a" && echo "switch-zlib: OK"
 ```
 
-### Nintendo Wii
+The expected devkitPro root is `/opt/devkitpro` on Linux or `C:/devkitPro` on
+Windows. If you installed it elsewhere, set `DEVKITPRO` to its root before
+running CMake. The toolchain requires `devkitA64`, `libnx`, and the AArch64 C++
+compiler at that location.
 
-The Wii build uses devkitPPC/libogc and a native GX rendering path. The Homebrew Channel layout remains:
+### Windows
 
-```text
-apps/OptiCraft/
+Use the **devkitPro MSYS** shell, not a generic MSYS2 `CLANG64` shell. In that
+shell, `dkp-pacman -Q switch-dev libnx switch-zlib` should list the packages
+after installation. If your devkitPro directory is `C:\devkitPro`, the MSYS
+shell value is normally:
+
+```bash
+export DEVKITPRO=/c/devkitPro
+```
+
+## Get the source
+
+Clone the repository and initialise every required third-party dependency:
+
+```bash
+git clone --recurse-submodules <repository-url> OptiCraftHeritageEdition
+cd OptiCraftHeritageEdition
 ```
 
 ### Nintendo Switch Homebrew
 
 The Switch port has two deliberately separate paths: a small `devkitA64`/libnx
-hardware diagnostic and the full game. The game creates a native EGL/OpenGL
-context through the Switch Mesa/Nouveau portlibs and uses Switch-specific graphics,
+hardware diagnostic and the full game. The game uses Switch-specific graphics,
 Joy-Con/Pro Controller input, SD storage, and applet lifecycle backends; it does
 not reuse either legacy console renderer. Both paths produce:
 
-```text
-bin/switch/OptiCraft.nro
+The Switch port has two deliberately separate paths: a small `devkitA64`/libnx
+hardware diagnostic and the full game. The game uses Switch-specific graphics,
+Joy-Con/Pro Controller input, SD storage, and applet lifecycle backends; it does
+not reuse either legacy console renderer. Both paths produce:
+For an existing checkout, use:
+
+```bash
+git submodule update --init --recursive
 ```
 
-## Source layout
+## Build the Switch port
 
-```text
-src/
-  client/       Client-side shared code
-  java/         Java compatibility/runtime helpers
-  net/          Game implementation
-  platform/     Shared platform interfaces and backend selection
-  pc/           Desktop-specific implementation
-  ps2/          PlayStation 2 implementation
-  switch/       Nintendo Switch Homebrew implementation
-  wii/          Nintendo Wii implementation
-  util/         Shared utility code
+### 1. Build the game
 
-cmake/          Toolchains, source selection, and platform build logic
-external/       Third-party dependencies
+Build `switch-release` to start OptiCraft itself. This target contains
+`main_switch.cpp`, initializes the native Switch graphics context, and hands
+control to `Minecraft::start()`; it is the NRO to use when you want to enter the
+game rather than run a hardware test.
+
+```bash
+cmake --preset switch-release
+cmake --build --preset switch-release
 ```
 
-Platform targets deliberately select one implementation for each public backend. This keeps PC, PS2, and Wii implementations from accidentally entering the same link target.
-
-## Building
-
-CMake 3.21 or newer is required. Presets are defined in `CMakePresets.json`.
-
-### Desktop
+Copy the resulting NRO to the SD card:
 
 ```text
-cmake --preset gcc-debug
-cmake --build --preset gcc-debug
+sdmc:/switch/OptiCraft/OptiCraft.nro
 ```
 
-For a normal optimized build:
+### 2. Stage runtime data
+Launch it from the Homebrew Menu. It is a diagnostic, not the game.
+
+The diagnostic reports both Horizon's native SD-filesystem result and whether
+the libnx `sdmc:` devoptab can be opened. It deliberately does **not** call
+`fsdevMountSdmc()` itself: libnx's default runtime has already initialized FS
+and mounted `sdmc:` before `main()` starts, and a second mount can produce a
+spurious libnx error. If native SD access succeeds but devoptab access fails,
+record the displayed `errno` and check the Switch/libnx environment rather
+than treating a repeated-mount result as an SD-card failure.
+
+### 2. Full native game target
+
+Once bring-up works, configure and build the full port:
+
+```bash
+cmake --preset switch-release
+cmake --build --preset switch-release
+```
+
+The presets select the Switch toolchain, `PLATFORM=SWITCH`, and either the
+bring-up or full-game source set.
+
+### 3. Stage runtime data
+
+The NRO does **not** embed the game's loose runtime data. For a playable full
+target, provide the following source directories yourself:
 
 ```text
-cmake --preset gcc-release
-cmake --build --preset gcc-release
+data/assets/
+data/resources/
 ```
 
-### 32-bit / legacy PC
+Then stage them next to the game NRO:
 
-The CMake presets do not hardcode an MSYS2 installation path. On Windows, use:
+```bash
+cmake --build build/switch-release --target switch-data
+```
+
+This creates the host-side deployment layout:
 
 ```text
-build_gcc32.bat legacy
+bin/switch/
+├── OptiCraft.nro
+└── data/
+    ├── assets/
+    └── resources/
 ```
 
-The batch file owns the local MSYS2 installation path instead of exposing it through CMake. To use another installation without editing the project:
-
-```bat
-set OPTICRAFT_MSYS2_ROOT=D:\Tools\msys64
-build_gcc32.bat legacy
-```
-
-The accepted modes are `debug`, `release`, and `legacy`.
-
-### PlayStation 2
+Copy its contents to the SD card so the final layout is:
 
 ```text
-cmake --preset ps2-release
-cmake --build --preset ps2-release
+sdmc:/switch/OptiCraft/
+├── OptiCraft.nro
+├── data/
+│   ├── assets/
+│   └── resources/
+└── .minecraft/              # created for saves and options
 ```
 
-Use `ps2-debug` for a debug build. Asset staging remains a separate step so large runtime data is not recopied after every link.
+The Switch resource backend reads `sdmc:/switch/OptiCraft/data`, and the
+client-policy backend stores saves/options at
+`sdmc:/switch/OptiCraft/.minecraft`.
 
-### Nintendo Wii
-
-```text
-cmake --preset wii-release
-cmake --build --preset wii-release
-```
-
-Use `wii-debug` for a debug build and `wii-bringup` for the minimal hardware/toolchain bring-up target.
-
-### Nintendo Switch Homebrew
+### Optional: hardware bring-up diagnostic
 
 Install the devkitPro `switch-dev` package group. Two presets intentionally keep
 hardware diagnosis separate from the game:
@@ -150,17 +195,6 @@ cmake --build --preset switch-debug
 cmake --build build/switch-debug --target switch-data
 ```
 
-Alternatively, the repository helper performs configure, build, and data
-staging in the correct order, including in a fresh checkout with no CMake
-cache:
-
-```text
-./build_switch.sh debug --data-root /path/to/runtime-data
-```
-
-Use `release` or `bringup` instead of `debug` as needed. Pass `--no-data` when
-only the NRO should be built.
-
 Each build directory is created by its matching configure command. If CMake
 reports `could not load cache`, run `cmake --preset switch-debug` (or
 `switch-release`) before the corresponding build command.
@@ -174,22 +208,95 @@ live elsewhere, configure with `-DSWITCH_DATA_ROOT=/path/to/runtime-data`.
 Saves and options are stored under
 `sdmc:/switch/OptiCraft/.minecraft`.
 
-The initial controller mapping uses the left stick for movement and the right
-stick for camera/cursor motion. `A` jumps or confirms, `B` cancels, `X` opens
-the inventory, `Y` drops the selected item, `ZR` attacks, `ZL` uses an item,
-`+` opens the pause menu, and the D-pad supplies menu navigation. The Home
-button and applet lifecycle remain managed by libnx.
+`switch-bringup` remains the recommended first boot on new hardware; it does not
+include the game and is only a diagnostic. Use a Homebrew-enabled Switch only;
+this project does not provide instructions for modifying a console.
+Use this only to diagnose the toolchain, controller, framebuffer, or SD card;
+it intentionally does not enter the game:
+
+```bash
+cmake --preset switch-bringup
+cmake --build --preset switch-bringup
+
+# Full-game development target
+cmake --preset switch-release
+cmake --build --preset switch-release
+cmake --build build/switch-release --target switch-data
+```
+
+Both modes run `nacptool` and `elf2nro` and produce
+`bin/switch/OptiCraft.nro`. Copy it to
+`sdmc:/switch/OptiCraft/OptiCraft.nro`. The playable target reads runtime data
+from `sdmc:/switch/OptiCraft/data`: place the repository's `data/assets` and
+`data/resources` directories there (the `switch-data` target stages the matching
+host-side tree). Saves and options are stored under
+`sdmc:/switch/OptiCraft/.minecraft`.
 
 `switch-bringup` remains the recommended first boot on new hardware; it does not
 include the game and is only a diagnostic. Use a Homebrew-enabled Switch only;
 this project does not provide instructions for modifying a console.
+It produces `bin/switch/OptiCraft-bringup.nro`, which may safely coexist with
+the playable `OptiCraft.nro` on the SD card.
 
-## Development notes
+The diagnostic reports both Horizon's native SD-filesystem result and whether
+the libnx `sdmc:` devoptab can be opened. It deliberately does **not** call
+`fsdevMountSdmc()` itself: libnx's default runtime has already initialized FS
+and mounted `sdmc:` before `main()` starts, and a second mount can produce a
+spurious libnx error. If native SD access succeeds but devoptab access fails,
+record the displayed `errno` and check the Switch/libnx environment rather
+than treating a repeated-mount result as an SD-card failure.
 
-OptiCraft Heritage contains substantial platform-specific changes compared with the behavior it reproduces. Examples include custom render backends, legacy UI work, low-memory chunk policies, console input layers, asset streaming, platform storage, audio backends, profiling, and console-specific performance tuning.
+> The `data/assets` and `data/resources` directories are not present in every
+> source checkout. `switch-data` can only copy data you have supplied; it cannot
+> generate missing game assets.
 
-When changing shared systems, keep the platform abstraction boundary intact and avoid introducing PC-only assumptions into common code. Likewise, console-specific optimizations should remain behind platform policies or dedicated backends whenever possible.
+## Customise the Homebrew Menu entry
+
+Set metadata at configure time. `SWITCH_ICON` must point to an existing
+256×256 JPEG:
+
+```bash
+cmake --preset switch-release \
+  -DSWITCH_TITLE="OptiCraft Heritage" \
+  -DSWITCH_AUTHOR="Your name" \
+  -DSWITCH_VERSION="1.0.0" \
+  -DSWITCH_ICON="/absolute/path/to/icon.jpg"
+cmake --build --preset switch-release
+```
+
+The packaging target validates the icon path and passes these values to
+`nacptool`/`elf2nro`.
+
+## Optional network deployment
+
+If `nxlink` is installed and the console is listening, send the packaged NRO
+directly with:
+
+```bash
+cmake --build --preset switch-bringup --target switch-nxlink
+```
+
+`switch-nxlink` is created only when the tool is available.
+
+## Troubleshooting
+
+| Error | Fix |
+| --- | --- |
+| `devkitPro Switch SDK not found` | Set `DEVKITPRO` to the directory containing `devkitA64` and `libnx`, then configure again. |
+| `aarch64-none-elf-g++ not found` | Install the devkitA64 component of devkitPro. |
+| `elf2nro and nacptool are required` | Install the devkitPro Switch tools. |
+| `Switch full game requires switch-zlib` | Install `switch-zlib`, then rerun the `switch-release` configure command. |
+| `switch-data` fails | Add the missing `data/assets` and `data/resources` directories before staging. |
+
+These checks are enforced by the Switch toolchain and build configuration.
+
+## Other targets
+
+The repository also retains PC, PlayStation 2, and Nintendo Wii code paths.
+Their presets are listed in `CMakePresets.json`; Switch instructions above are
+the supported primary workflow in this README.
 
 ## Third-party software
 
-Third-party libraries are kept under `external/` and retain their respective licenses and notices. Review those licenses independently before redistributing binaries.
+Third-party libraries are located under `external/` and retain their respective
+licenses and notices. Review those licences before redistributing binaries.

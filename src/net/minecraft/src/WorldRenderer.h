@@ -48,7 +48,7 @@ public:
 	// calling releaseDisplayListsForCache() directly, so its guard is unchanged.
 	bool holdsRecordedTerrain() const;
 #endif
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_SWITCH
 	void callOcclusionQueryList();
 	int_t getGLCallListForPass(int_t pass);
 #endif
@@ -164,12 +164,12 @@ public:
 #endif
 	bool isVisible;
 	bool isInFrustum;
-#if PLATFORM_PC || PLATFORM_PS2
+#if PLATFORM_PC || PLATFORM_PS2 || PLATFORM_SWITCH
 	// Stronger than isInFrustum: PS2 uses it for its clip fast path and desktop
 	// Fancy Occlusion uses it to avoid querying boxes that cross a frustum plane.
 	bool isFullyInFrustum;
 #endif
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_SWITCH
 	bool isVisibleFromPosition;
 	double visibleFromX;
 	double visibleFromY;
@@ -209,7 +209,7 @@ public:
 #endif
 
 private:
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_SWITCH
 	int_t glRenderList;
 	bool needsOcclusionBoxUpdate;
 	void updateOcclusionBox();

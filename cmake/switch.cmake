@@ -10,6 +10,13 @@ set(SWITCH_DATA_ROOT "${CMAKE_SOURCE_DIR}/data" CACHE PATH
 
 if(SWITCH_BRINGUP)
     set(SWITCH_SOURCES "${CMAKE_SOURCE_DIR}/src/switch/tools/SwitchBringup.cpp")
+
+if(SWITCH_BRINGUP)
+    set(SWITCH_SOURCES "${CMAKE_SOURCE_DIR}/src/switch/tools/SwitchBringup.cpp")
+    # Keep the diagnostic artifact distinct from the playable NRO.  Both
+    # targets otherwise share bin/switch/, making it easy to copy a bring-up
+    # test over the game and then expect it to start Minecraft.
+    set(SWITCH_ARTIFACT_NAME "OptiCraft-bringup")
     message(STATUS "Switch build: BRINGUP diagnostics")
 else()
     mcbeta_collect_platform_sources(SWITCH_SOURCES switch)
@@ -21,6 +28,7 @@ else()
     mcbeta_exclude_sources(SWITCH_SOURCES "[/\\]switch[/\\]tools[/\\]SwitchBringup\\.cpp$")
     mcbeta_exclude_remote_stats_sources(SWITCH_SOURCES)
     mcbeta_select_platform_backends(SWITCH_SOURCES SWITCH SWITCH SWITCH)
+    set(SWITCH_ARTIFACT_NAME "OptiCraft")
     message(STATUS "Switch build: FULL game")
 endif()
 
@@ -49,10 +57,6 @@ if(NOT SWITCH_BRINGUP)
     endif()
     target_include_directories(OptiCraft PRIVATE "${SWITCH_PORTLIBS}/include")
     target_link_directories(OptiCraft PRIVATE "${SWITCH_PORTLIBS}/lib")
-    set_source_files_properties(
-        "${CMAKE_SOURCE_DIR}/src/switch/render/SwitchGraphicsContext.cpp"
-        PROPERTIES COMPILE_DEFINITIONS __SWITCH__)
-    list(PREPEND _SWITCH_LIBS glad EGL glapi drm_nouveau)
     list(APPEND _SWITCH_LIBS z)
 endif()
 target_link_libraries(OptiCraft PRIVATE ${_SWITCH_LIBS})
@@ -76,4 +80,75 @@ add_custom_target(switch-data
             "-DSOURCE_ROOT=${SWITCH_DATA_ROOT}"
             "-DOUTPUT_ROOT=${SWITCH_OUTPUT_DIR}/data"
             -P "${CMAKE_SOURCE_DIR}/cmake/StageSwitchData.cmake"
+find_program(SWITCH_ELF2NRO NAMES elf2nro HINTS "${DEVKITPRO}/tools/bin")
+find_program(SWITCH_NACPTOOL NAMES nacptool HINTS "${DEVKITPRO}/tools/bin")
+if(NOT SWITCH_ELF2NRO OR NOT SWITCH_NACPTOOL)
+    message(FATAL_ERROR
+        "elf2nro and nacptool are required. Install devkitPro's switch-tools package.")
+endif()
+target_link_libraries(OptiCraft PRIVATE ${_SWITCH_LIBS})
+target_link_options(OptiCraft PRIVATE "-specs=${LIBNX}/switch.specs" -march=armv8-a+crc -mtp=soft -fPIE
+    "-Wl,-Map,${CMAKE_BINARY_DIR}/OptiCraft.map" -Wl,--gc-sections)
+
+# Keep these values in the cache so release builds can supply their own
+# Homebrew Menu metadata without changing the build scripts.
+if(SWITCH_BRINGUP)
+    set(_switch_default_title "OptiCraft Heritage Bring-up")
+else()
+    set(_switch_default_title "OptiCraft Heritage Edition")
+endif()
+set(SWITCH_TITLE "${_switch_default_title}" CACHE STRING "NRO application title")
+set(SWITCH_AUTHOR "OptiCraft Heritage contributors" CACHE STRING "NRO author")
+set(SWITCH_VERSION "1.1-switch-dev" CACHE STRING "NRO version")
+set(SWITCH_ICON "" CACHE FILEPATH "Optional 256x256 JPEG icon embedded in the NRO")
+
+set(SWITCH_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/switch")
+set(SWITCH_NACP "${CMAKE_CURRENT_BINARY_DIR}/${SWITCH_ARTIFACT_NAME}.nacp")
+set(SWITCH_NRO "${SWITCH_OUTPUT_DIR}/${SWITCH_ARTIFACT_NAME}.nro")
+
+add_custom_command(
+    OUTPUT "${SWITCH_NACP}"
+    COMMAND "${SWITCH_NACPTOOL}" --create
+            "${SWITCH_TITLE}" "${SWITCH_AUTHOR}" "${SWITCH_VERSION}" "${SWITCH_NACP}"
+    COMMENT "Creating Nintendo Switch application metadata"
+    VERBATIM
+)
+
+set(_switch_elf2nro_arguments
+    "$<TARGET_FILE:OptiCraft>" "${SWITCH_NRO}" "--nacp=${SWITCH_NACP}")
+if(SWITCH_ICON)
+    if(NOT EXISTS "${SWITCH_ICON}")
+        message(FATAL_ERROR "SWITCH_ICON does not exist: ${SWITCH_ICON}")
+    endif()
+    list(APPEND _switch_elf2nro_arguments "--icon=${SWITCH_ICON}")
+endif()
+
+add_custom_command(
+    OUTPUT "${SWITCH_NRO}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${SWITCH_OUTPUT_DIR}"
+    COMMAND "${SWITCH_ELF2NRO}" ${_switch_elf2nro_arguments}
+    DEPENDS OptiCraft "${SWITCH_NACP}"
+    COMMENT "Packaging ${SWITCH_NRO}"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+)
+add_custom_target(switch-package ALL DEPENDS "${SWITCH_NRO}")
+
+# nxlink transfers an already-packaged NRO; it does not convert an ELF into
+# one. Keep network deployment optional so ordinary builds work without it.
+find_program(SWITCH_NXLINK NAMES nxlink HINTS "${DEVKITPRO}/tools/bin")
+if(SWITCH_NXLINK)
+    add_custom_target(switch-nxlink
+        COMMAND "${SWITCH_NXLINK}" "${SWITCH_NRO}"
+        DEPENDS switch-package
+        COMMENT "Sending ${SWITCH_ARTIFACT_NAME}.nro with nxlink"
+        USES_TERMINAL
+        VERBATIM
+    )
+endif()
+
+add_custom_target(switch-data
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${SWITCH_OUTPUT_DIR}/data"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data/assets" "${SWITCH_OUTPUT_DIR}/data/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/data/resources" "${SWITCH_OUTPUT_DIR}/data/resources"
     COMMENT "Staging Switch runtime data" VERBATIM)
