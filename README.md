@@ -140,6 +140,11 @@ frame. A slow initial chunk-generation frame therefore degrades temporarily to
 slow motion instead of queuing a burst of ten expensive ticks that can look
 like a permanent freeze and delay the pause-menu input.
 
+The compatibility renderer keeps the terrain and lightmap texture matrices
+separate, matching fixed-function OpenGL. This prevents the lightmap transform
+on texture unit one from remapping the terrain atlas on texture unit zero and
+leaving submitted world geometry black or effectively invisible.
+
 ## Switch preview diagnostics
 
 Preview builds draw three `SWDBG` lines above the HUD while a world is open. The

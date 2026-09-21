@@ -19,6 +19,7 @@ void renderSetActiveTextureUnit(int unit)
         ? static_cast<GLenum>(unit)
         : static_cast<GLenum>(GL_TEXTURE0 + unit);
     glActiveTexture(textureUnit);
+    SwitchLegacyRenderer::activeTextureUnit(static_cast<int>(textureUnit - GL_TEXTURE0));
 }
 void renderSetClientActiveTextureUnit(int){} void renderSetMultiTextureCoord(int,float,float){} void renderSetLightmapColors(const std::uint32_t*,int){} void renderColor4f(float r,float g,float b,float a){SwitchLegacyRenderer::color(r,g,b,a);} void renderColor3f(float r,float g,float b){SwitchLegacyRenderer::color(r,g,b,1.0f);} void renderNormal3f(float,float,float){}
 void renderGenerateTextures(int n,int*t){glGenTextures(n,reinterpret_cast<GLuint*>(t));} void renderDeleteTextures(int n,const int*t){glDeleteTextures(n,reinterpret_cast<const GLuint*>(t));} void renderTextureSubImageRgba(int level,int x,int y,int w,int h,const void*p){glTexSubImage2D(GL_TEXTURE_2D,level,x,y,w,h,GL_RGBA,GL_UNSIGNED_BYTE,p);} void renderTextureImageRgba(int level,int w,int h,const void*p){glTexImage2D(GL_TEXTURE_2D,level,GL_RGBA8,w,h,0,GL_RGBA,GL_UNSIGNED_BYTE,p);} void renderTextureParameters(bool blur,bool mipmaps,bool clamp){glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,mipmaps?(blur?GL_LINEAR_MIPMAP_LINEAR:GL_NEAREST_MIPMAP_LINEAR):(blur?GL_LINEAR:GL_NEAREST));glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,blur?GL_LINEAR:GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,clamp?GL_CLAMP_TO_EDGE:GL_REPEAT);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,clamp?GL_CLAMP_TO_EDGE:GL_REPEAT);}
