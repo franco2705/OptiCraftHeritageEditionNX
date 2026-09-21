@@ -7,7 +7,6 @@ namespace SwitchLegacyRenderer
 bool draw(const RenderInterleavedMesh &mesh);
 void color(float red, float green, float blue, float alpha);
 void alphaTest(bool enabled, RenderCompare function = RenderCompare::Greater, float reference = 0.1f);
-void activeTextureUnit(int unit);
 void matrixMode(RenderMatrixMode mode);
 void loadIdentity();
 void loadMatrix(const float *values);

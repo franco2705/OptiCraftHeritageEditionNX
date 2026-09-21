@@ -2,18 +2,13 @@
 
 #include "platform/Diagnostics.h"
 
-#include <atomic>
-#include <chrono>
 #include <cstdio>
-#include <mutex>
-#include <thread>
 
 namespace
 {
-std::atomic<const char *> g_stage{"boot"};
-std::atomic<std::uint64_t> g_frame{0};
-std::atomic<std::uint64_t> g_ticks{0};
-std::once_flag g_watchdogOnce;
+const char *g_stage = "boot";
+std::uint64_t g_frame = 0;
+std::uint64_t g_ticks = 0;
 std::uint64_t g_lastWorldRenderMicros = 0;
 bool g_hasWorld = false;
 bool g_hasPlayer = false;
@@ -22,13 +17,11 @@ std::uint64_t g_displayListsFound = 0;
 std::uint64_t g_displayListsMissing = 0;
 std::uint64_t g_drawCalls = 0;
 std::uint64_t g_vertices = 0;
-
 }
 
 void switchDebugFrameBegin(bool hasWorld, bool hasPlayer)
 {
-    startWatchdog();
-    g_frame.fetch_add(1, std::memory_order_relaxed);
+    ++g_frame;
     g_hasWorld = hasWorld;
     g_hasPlayer = hasPlayer;
     g_terrainListsRequested = 0;
@@ -36,7 +29,7 @@ void switchDebugFrameBegin(bool hasWorld, bool hasPlayer)
     g_displayListsMissing = 0;
     g_drawCalls = 0;
     g_vertices = 0;
-    g_stage.store("frame-begin", std::memory_order_relaxed);
+    g_stage = "frame-begin";
 }
 
 void switchDebugTerrainListsRequested(int count)
@@ -63,19 +56,19 @@ void switchDebugDisplayListResult(bool found, bool drawn, int vertices)
 
 void switchDebugCheckpoint(const char *stage)
 {
-    g_stage.store(stage ? stage : "(null)", std::memory_order_relaxed);
+    g_stage = stage ? stage : "(null)";
 }
 
 void switchDebugWorldRenderComplete(std::uint64_t elapsedMicros)
 {
     g_lastWorldRenderMicros = elapsedMicros;
-    g_stage.store("world-done", std::memory_order_relaxed);
+    g_stage = "world-done";
 }
 
 void switchDebugTickComplete()
 {
-    g_ticks.fetch_add(1, std::memory_order_relaxed);
-    g_stage.store("tick-done", std::memory_order_relaxed);
+    ++g_ticks;
+    g_stage = "tick-done";
 }
 
 std::string switchDebugLine(int line)
@@ -91,9 +84,8 @@ std::string switchDebugLine(int line)
     {
         case 0:
             std::snprintf(text, sizeof(text), "SWDBG f=%llu t=%llu stage=%s",
-                static_cast<unsigned long long>(g_frame.load(std::memory_order_relaxed)),
-                static_cast<unsigned long long>(g_ticks.load(std::memory_order_relaxed)),
-                g_stage.load(std::memory_order_relaxed));
+                static_cast<unsigned long long>(g_frame),
+                static_cast<unsigned long long>(g_ticks), g_stage);
             break;
         case 1:
             std::snprintf(text, sizeof(text), "world=%d player=%d render=%llu us heap=%s",

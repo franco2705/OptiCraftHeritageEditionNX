@@ -32,9 +32,7 @@ Matrix multiply(const Matrix &a, const Matrix &b)
 
 std::vector<Matrix> g_modelView{identity()};
 std::vector<Matrix> g_projection{identity()};
-std::array<std::vector<Matrix>, 2> g_texture{
-    std::vector<Matrix>{identity()}, std::vector<Matrix>{identity()}};
-int g_activeTextureUnit = 0;
+std::vector<Matrix> g_texture{identity()};
 std::vector<Matrix> *g_current = &g_modelView;
 std::array<float, 4> g_color{1, 1, 1, 1};
 bool g_alphaTest = false;
@@ -167,10 +165,7 @@ bool draw(const RenderInterleavedMesh &mesh)
     glUseProgram(g_program);
     glUniformMatrix4fv(glGetUniformLocation(g_program, "modelView"), 1, GL_FALSE, g_modelView.back().data());
     glUniformMatrix4fv(glGetUniformLocation(g_program, "projection"), 1, GL_FALSE, g_projection.back().data());
-    // The compatibility shader samples texture unit zero. The fixed-function
-    // API has an independent texture matrix for every active texture unit, so
-    // the lightmap matrix configured on unit one must never alter terrain UVs.
-    glUniformMatrix4fv(glGetUniformLocation(g_program, "textureMatrix"), 1, GL_FALSE, g_texture[0].back().data());
+    glUniformMatrix4fv(glGetUniformLocation(g_program, "textureMatrix"), 1, GL_FALSE, g_texture.back().data());
     glUniform4fv(glGetUniformLocation(g_program, "constantColor"), 1, g_color.data());
     glUniform1i(glGetUniformLocation(g_program, "hasColor"), mesh.hasColor);
     glUniform1i(glGetUniformLocation(g_program, "hasTexture"), mesh.hasTexture);
@@ -205,14 +200,7 @@ bool draw(const RenderInterleavedMesh &mesh)
 
 void color(float r, float g, float b, float a) { g_color = {r, g, b, a}; }
 void alphaTest(bool enabled, RenderCompare function, float reference) { g_alphaTest = enabled; g_alphaFunction = function; g_alphaReference = reference; }
-void activeTextureUnit(int unit)
-{
-    const int selected = std::clamp(unit, 0, static_cast<int>(g_texture.size()) - 1);
-    if (g_current == &g_texture[g_activeTextureUnit])
-        g_current = &g_texture[selected];
-    g_activeTextureUnit = selected;
-}
-void matrixMode(RenderMatrixMode mode) { g_current = mode == RenderMatrixMode::Projection ? &g_projection : mode == RenderMatrixMode::Texture ? &g_texture[g_activeTextureUnit] : &g_modelView; }
+void matrixMode(RenderMatrixMode mode) { g_current = mode == RenderMatrixMode::Projection ? &g_projection : mode == RenderMatrixMode::Texture ? &g_texture : &g_modelView; }
 void loadIdentity() { g_current->back() = identity(); }
 void loadMatrix(const float *values)
 {
@@ -258,7 +246,7 @@ void ortho(double l,double r,double b,double t,double n,double f)
 }
 void getMatrix(RenderMatrixQuery query, float *values)
 {
-    const Matrix &m=query==RenderMatrixQuery::Projection?g_projection.back():query==RenderMatrixQuery::Texture?g_texture[g_activeTextureUnit].back():g_modelView.back();
+    const Matrix &m=query==RenderMatrixQuery::Projection?g_projection.back():query==RenderMatrixQuery::Texture?g_texture.back():g_modelView.back();
     std::memcpy(values,m.data(),sizeof(Matrix));
 }
 void reset()
