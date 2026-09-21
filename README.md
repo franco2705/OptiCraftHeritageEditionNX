@@ -145,6 +145,12 @@ separate, matching fixed-function OpenGL. This prevents the lightmap transform
 on texture unit one from remapping the terrain atlas on texture unit zero and
 leaving submitted world geometry black or effectively invisible.
 
+Switch also streams non-critical chunk columns on a background worker. The
+three-by-three area around the player still loads synchronously for collision
+correctness, while surrounding saved-chunk decoding and terrain generation no
+longer block rendering, controller polling, or the pause menu during world
+entry.
+
 ## Switch preview diagnostics
 
 Preview builds draw three `SWDBG` lines above the HUD while a world is open. The
