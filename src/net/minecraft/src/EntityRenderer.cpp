@@ -30,6 +30,9 @@
 #include "MouseHelper.h"
 #include "ScaledResolution.h"
 #include "GuiIngame.h"
+#ifdef SWITCH_PLATFORM
+#include "switch/SwitchRuntimeDebug.h"
+#endif
 #include "GuiScreen.h"
 #include "GuiParticle.h"
 #include "ChunkProviderLoadOrGenerate.h"
@@ -1312,6 +1315,9 @@ void EntityRenderer::updateCameraAndRender(float partialTicks)
     
     if (mc->theWorld != nullptr)
     {
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("render-world");
+#endif
 #if PLATFORM_PS2
         renderSetLegacyPresentationGamma(mc->gameSettings != nullptr && mc->gameSettings->legacyLook);
 #endif
@@ -1435,6 +1441,9 @@ void EntityRenderer::updateCameraAndRender(float partialTicks)
 
 void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano)
 {
+#ifdef SWITCH_PLATFORM
+    switchDebugCheckpoint("world-setup");
+#endif
     renderEnable(RenderCapability::CullFace);
     renderEnable(RenderCapability::DepthTest);
     
@@ -1529,6 +1538,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
         // Renderizar cielo (solo en distancias cortas)
         if (mc->gameSettings->renderDistance < 2)
         {
+#ifdef SWITCH_PLATFORM
+            switchDebugCheckpoint("sky");
+#endif
             setupFog(-1, partialTicks);
 #if PLATFORM_PROFILE_RENDER_PHASES
             const std::uint32_t cycSky = platformProfileRenderPhaseBegin();
@@ -1554,6 +1566,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
 #if PLATFORM_PROFILE_RENDER_PHASES
         const std::uint32_t cycFrustum = platformProfileRenderPhaseBegin();
 #endif
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("frustum");
+#endif
         mc->renderGlobal->clipRenderersByFrustrum(&frustrum, partialTicks);
 #if PLATFORM_PROFILE_RENDER_PHASES
         platformProfileRenderPhaseEnd(cycFrustum, PlatformRenderPhase::Frustum);
@@ -1562,6 +1577,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
         // Actualizar renderers (construccion de chunks)
         if (eye == 0)
         {
+#ifdef SWITCH_PLATFORM
+            switchDebugCheckpoint("chunk-build");
+#endif
 #if PLATFORM_MESH_BUDGET
             // One renderer budget step per rendered frame. The vanilla
             // time-limit loop below calls updateRenderers repeatedly within the
@@ -1612,6 +1630,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
 #if PLATFORM_PS2 && MC_LOG_LEVEL > 2
         const PlatformDrawSnapshot opaqueDrawStart = platformProfileDrawSnapshot();
 #endif
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("terrain-opaque");
+#endif
         renderglobal->sortAndRender(entityliving, 0, partialTicks);
         if (terrainOpaquePass)
             renderTerrainEndPass(RenderTerrainPass::Opaque);
@@ -1633,6 +1654,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
         const PlatformDrawSnapshot entitiesDrawStart = platformProfileDrawSnapshot();
 #endif
 #if !PLATFORM_SKIP_WORLD_ENTITIES
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("entities");
+#endif
         renderglobal->renderEntities(entityliving->getPosition(partialTicks), &frustrum, partialTicks);
 #else
         // Low-cost profiles may skip ordinary world entities, but keep the
@@ -1662,6 +1686,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
         
         // Particulas
 #if !PLATFORM_SKIP_WORLD_PARTICLES
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("particles");
+#endif
         effectrenderer->renderParticles(entityliving, partialTicks);
         disableLightmap(partialTicks);
 #if PLATFORM_PS2 && MC_LOG_LEVEL > 2
@@ -1734,6 +1761,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
                 renderDisable(RenderCapability::CullFace);
                 renderColorMask(false, false, false, false);
             }
+#endif
+#ifdef SWITCH_PLATFORM
+            switchDebugCheckpoint("terrain-alpha");
 #endif
             int transparentCount = renderglobal->sortAndRender(entityliving, 1, partialTicks);
 #if PLATFORM_NATIVE_TERRAIN_PIPELINE
@@ -1867,6 +1897,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
         
         // Lluvia y nieve
 #if !PLATFORM_SKIP_RAIN_SNOW
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("weather");
+#endif
 #if PLATFORM_PS2 && MC_LOG_LEVEL > 2
         const PlatformDrawSnapshot weatherDrawStart = platformProfileDrawSnapshot();
 #endif
@@ -1881,6 +1914,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
         setupFog(0, partialTicks);
         renderEnable(RenderCapability::Fog);
 #if !PLATFORM_SKIP_CLOUDS
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("clouds");
+#endif
 #if PLATFORM_PS2 && MC_LOG_LEVEL > 2
         const PlatformDrawSnapshot cloudsDrawStart = platformProfileDrawSnapshot();
 #endif
@@ -1898,6 +1934,9 @@ void EntityRenderer::renderWorld(float partialTicks, int64_t renderTimeLimitNano
         {
             renderClear(RenderClearMask::Depth);  // 256
 #if !PLATFORM_SKIP_HAND_RENDER
+#ifdef SWITCH_PLATFORM
+            switchDebugCheckpoint("hand");
+#endif
 #if PLATFORM_PROFILE_RENDER_PHASES
             const std::uint32_t cycHand = platformProfileRenderPhaseBegin();
 #endif

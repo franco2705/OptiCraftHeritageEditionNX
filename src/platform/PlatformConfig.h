@@ -29,6 +29,14 @@
 #  endif
 #endif
 
+#ifndef PLATFORM_SWITCH
+#  if defined(SWITCH_PLATFORM)
+#    define PLATFORM_SWITCH 1
+#  else
+#    define PLATFORM_SWITCH 0
+#  endif
+#endif
+
 #ifndef PLATFORM_WII
 #  if defined(WII_PLATFORM)
 #    define PLATFORM_WII 1
@@ -39,11 +47,11 @@
 
 // User-facing hardware calibration features.
 #ifndef PLATFORM_HAS_CONTROLLER_CALIBRATION
-#  define PLATFORM_HAS_CONTROLLER_CALIBRATION (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_HAS_CONTROLLER_CALIBRATION (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 #ifndef PLATFORM_HAS_ASPECT_RATIO_OPTION
-#  define PLATFORM_HAS_ASPECT_RATIO_OPTION (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_HAS_ASPECT_RATIO_OPTION (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 // Game-side optimization policies. These describe the reason a code path exists
@@ -64,18 +72,18 @@
 // A bounded-world concern, not a CPU one: without it the Wii unloads the
 // dragon with its chunk the moment it flies past the cache radius.
 #ifndef PLATFORM_ENTITY_CHUNK_RETENTION
-#  define PLATFORM_ENTITY_CHUNK_RETENTION (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_ENTITY_CHUNK_RETENTION (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 // java.util.Random's 48-bit LCG step as 32-bit multiplies (see Random::next).
 // Bit-identical to the 64-bit product, so seeds stay compatible; it only
 // matters on cores where a 64-bit multiply is a library call.
 #ifndef PLATFORM_RANDOM_SPLIT_MULTIPLY
-#  define PLATFORM_RANDOM_SPLIT_MULTIPLY (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_RANDOM_SPLIT_MULTIPLY (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 #ifndef PLATFORM_DIRECT_ANALOG_MOVEMENT
-#  define PLATFORM_DIRECT_ANALOG_MOVEMENT PLATFORM_PS2
+#  define PLATFORM_DIRECT_ANALOG_MOVEMENT (PLATFORM_PS2 || PLATFORM_SWITCH)
 #endif
 
 #ifndef PLATFORM_ASYNC_CHUNK_GENERATION
@@ -87,19 +95,19 @@
 // probe alone is ~520 optional files x several spellings of failed opens on
 // every RenderEngine (re)load -- a FAT directory walk each over USB/SD.
 #ifndef PLATFORM_OPTIFINE_CUSTOM_ANIMATIONS
-#  define PLATFORM_OPTIFINE_CUSTOM_ANIMATIONS (!(PLATFORM_PS2 || PLATFORM_WII))
+#  define PLATFORM_OPTIFINE_CUSTOM_ANIMATIONS (!(PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH))
 #endif
 
 #ifndef PLATFORM_OPTIFINE_RANDOM_MOBS
-#  define PLATFORM_OPTIFINE_RANDOM_MOBS (!(PLATFORM_PS2 || PLATFORM_WII))
+#  define PLATFORM_OPTIFINE_RANDOM_MOBS (!(PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH))
 #endif
 
 #ifndef PLATFORM_OPTIFINE_CUSTOM_FONTS
-#  define PLATFORM_OPTIFINE_CUSTOM_FONTS (!(PLATFORM_PS2 || PLATFORM_WII))
+#  define PLATFORM_OPTIFINE_CUSTOM_FONTS (!(PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH))
 #endif
 
 #ifndef PLATFORM_LOCAL_STATS
-#  define PLATFORM_LOCAL_STATS (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_LOCAL_STATS (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 #ifndef PLATFORM_ENUMERATE_SAVE_DIRECTORIES
@@ -128,11 +136,11 @@
 #endif
 
 #ifndef PLATFORM_FAST_REGION_COMPRESSION
-#  define PLATFORM_FAST_REGION_COMPRESSION (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_FAST_REGION_COMPRESSION (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 #ifndef PLATFORM_PROFILE_STREAMING
-#  define PLATFORM_PROFILE_STREAMING (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_PROFILE_STREAMING (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 // PS2 region files keep a whole-region write buffer, so a modified chunk can be
@@ -144,7 +152,7 @@
 #endif
 
 #ifndef PLATFORM_PROFILE_RENDER_PHASES
-#  define PLATFORM_PROFILE_RENDER_PHASES (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_PROFILE_RENDER_PHASES (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 #ifndef PLATFORM_NATIVE_TERRAIN_PIPELINE
@@ -160,6 +168,9 @@
 #endif
 
 #ifndef PLATFORM_HAS_VIRTUAL_KEYBOARD
+// Switch has controller text-button hints, but no VirtualKeyboard backend yet.
+// Do not opt it into the shared overlay until it supplies the implementation:
+// VirtualKeyboard.h/cpp currently compile only for PS2 and Wii.
 #  define PLATFORM_HAS_VIRTUAL_KEYBOARD (PLATFORM_PS2 || PLATFORM_WII)
 #endif
 
@@ -175,7 +186,7 @@
 // re-points both contexts at the new draw buffer while PrimContext stays put,
 // so the every-other-frame old/black screen once blamed on per-context depth
 // state was really FRAME.FBP (see ps2_apply_color_mask).
-#  define PLATFORM_GUI_FORCE_DEPTH_DISABLED (PLATFORM_PS2 || PLATFORM_WII)
+#  define PLATFORM_GUI_FORCE_DEPTH_DISABLED (PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH)
 #endif
 
 #ifndef PLATFORM_CHUNK_EDGE_FOG
@@ -183,7 +194,7 @@
 #endif
 
 #ifndef PLATFORM_PC
-#  if PLATFORM_PS2 || PLATFORM_WII
+#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH
 #    define PLATFORM_PC 0
 #  else
 #    define PLATFORM_PC 1
@@ -311,7 +322,7 @@ declares."
 // This is deliberately NOT tied to PLATFORM_CONSOLE_LOW: it is a backend
 // capability question, not a performance budget.
 #ifndef PLATFORM_FONT_IMMEDIATE
-#  if PLATFORM_PS2 || PLATFORM_WII
+#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH
 #    define PLATFORM_FONT_IMMEDIATE 1
 #  else
 #    define PLATFORM_FONT_IMMEDIATE 0
@@ -323,7 +334,7 @@ declares."
 // once into a native GX display list, PS2 into a captured RAM mesh, and both
 // replay it against the live animated modelview.
 #ifndef PLATFORM_MODEL_IMMEDIATE
-#  define PLATFORM_MODEL_IMMEDIATE 0
+#  define PLATFORM_MODEL_IMMEDIATE PLATFORM_SWITCH
 #endif
 
 // Persistent native meshes are a backend capability. Wii records immutable GX
@@ -352,7 +363,7 @@ declares."
 // where they are aiming. Both console backends feed lwjgl::Mouse from a stick
 // (PS2) or the Wiimote IR pointer (Wii), so the coordinates are already there.
 #ifndef PLATFORM_SOFTWARE_CURSOR
-#  if PLATFORM_PS2 || PLATFORM_WII
+#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH
 #    define PLATFORM_SOFTWARE_CURSOR 1
 #  else
 #    define PLATFORM_SOFTWARE_CURSOR 0
