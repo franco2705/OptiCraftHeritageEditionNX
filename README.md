@@ -137,13 +137,17 @@ navigates menus. libnx owns Home-button and applet lifecycle handling.
 
 ## Switch preview diagnostics
 
-Preview builds draw two `SWDBG` lines above the HUD while a world is open. The
+Preview builds draw three `SWDBG` lines above the HUD while a world is open. The
 first reports the frame, tick, and last world-render phase reached; the second
 reports whether the world/player exist and the duration of the previous
 completed render. If the game stalls, photograph those lines before closing the
 application. Stages such as `chunk-build`, `terrain-opaque`, `terrain-alpha`,
 `entities`, `weather`, `clouds`, and `hand` narrow the stall to one renderer
-phase.
+phase. A third line reports requested terrain lists, retained lists found or
+missing, successful draw calls, and submitted vertices. A world with `terrain=0`
+is not producing visible chunk sections; nonzero `missing` means retained chunk
+meshes were lost, while nonzero lists with zero draws indicates a GL submission
+failure.
 
 ## Homebrew metadata and deployment
 

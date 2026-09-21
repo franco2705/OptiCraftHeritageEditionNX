@@ -10,5 +10,6 @@ void switchDebugFrameBegin(bool hasWorld, bool hasPlayer);
 void switchDebugCheckpoint(const char *stage);
 void switchDebugWorldRenderComplete(std::uint64_t elapsedMicros);
 void switchDebugTickComplete();
+void switchDebugTerrainListsRequested(int count);
+void switchDebugDisplayListResult(bool found, bool drawn, int vertices);
 std::string switchDebugLine(int line);
-

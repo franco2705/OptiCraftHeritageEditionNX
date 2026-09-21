@@ -2,6 +2,7 @@
 
 #include "net/minecraft/src/WorldRenderer.h"
 #include "platform/RenderAPI.h"
+#include "switch/SwitchRuntimeDebug.h"
 
 RenderList::RenderList()
 {
@@ -58,6 +59,7 @@ void RenderList::render()
     const float translateZ = static_cast<float>(static_cast<double>(originZ) - viewerZ);
     renderPushMatrix();
     renderTranslate(translateX, translateY, translateZ);
+    switchDebugTerrainListsRequested(static_cast<int>(displayListIds.size()));
     renderCallDisplayLists(static_cast<int>(displayListIds.size()), displayListIds.data());
     renderPopMatrix();
 }

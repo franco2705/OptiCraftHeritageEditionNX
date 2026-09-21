@@ -1,6 +1,7 @@
 #include "platform/RenderAPI.h"
 #include "switch/render/SwitchGraphicsContext.h"
 #include "switch/render/SwitchLegacyRenderer.h"
+#include "switch/SwitchRuntimeDebug.h"
 #include <glad/glad.h>
 #include <algorithm>
 #include <cstring>
@@ -26,7 +27,18 @@ bool renderDrawInterleaved(const RenderInterleavedMesh&m){if(compilingList)retur
 namespace { int nextDisplayList = 1; int nextQuery = 1; }
 int renderGenerateDisplayLists(int count){const int first=nextDisplayList;nextDisplayList+=count;return first;}
 void renderDeleteDisplayLists(int first,int count){for(int i=0;i<count;++i)displayLists.erase(first+i);} void renderBeginDisplayList(int list){compilingList=list;displayLists[list].clear();} void renderEndDisplayList(){compilingList=0;}
-void renderCallDisplayList(int list){auto found=displayLists.find(list);if(found!=displayLists.end())renderDrawCaptured(found->second);} void renderCallDisplayLists(int count,const int*lists){for(int i=0;i<count;++i)renderCallDisplayList(lists[i]);}
+void renderCallDisplayList(int list)
+{
+    const auto found = displayLists.find(list);
+    if (found == displayLists.end())
+    {
+        switchDebugDisplayListResult(false, false, 0);
+        return;
+    }
+    const bool drawn = renderDrawCaptured(found->second);
+    switchDebugDisplayListResult(true, drawn, found->second.vertexCount);
+}
+void renderCallDisplayLists(int count,const int*lists){for(int i=0;i<count;++i)renderCallDisplayList(lists[i]);}
 void renderGenerateOcclusionQueries(int count,int* queries){while(count--)*queries++=nextQuery++;}
 void renderBeginOcclusionQuery(int){} void renderEndOcclusionQuery(){}
 bool renderOcclusionQueryResultAvailable(int){return true;} unsigned int renderOcclusionQueryResult(int){return 1;}

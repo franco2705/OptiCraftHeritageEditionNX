@@ -948,6 +948,7 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 	resetOverlayGLState();
 	fr->drawStringWithShadow(switchDebugLine(0), 2, 136, 0xffff55);
 	fr->drawStringWithShadow(switchDebugLine(1), 2, 146, 0xffffff);
+	fr->drawStringWithShadow(switchDebugLine(2), 2, 156, 0x55ffff);
 #endif
 #if PLATFORM_PROFILE_RENDER_PHASES
 	platformProfileRenderPhaseEnd(cycHudHints, PlatformRenderPhase::HudHints);
