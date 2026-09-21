@@ -198,6 +198,18 @@ void color(float r, float g, float b, float a) { g_color = {r, g, b, a}; }
 void alphaTest(bool enabled, RenderCompare function, float reference) { g_alphaTest = enabled; g_alphaFunction = function; g_alphaReference = reference; }
 void matrixMode(RenderMatrixMode mode) { g_current = mode == RenderMatrixMode::Projection ? &g_projection : mode == RenderMatrixMode::Texture ? &g_texture : &g_modelView; }
 void loadIdentity() { g_current->back() = identity(); }
+void loadMatrix(const float *values)
+{
+    if (values != nullptr)
+        std::copy(values, values + 16, g_current->back().begin());
+}
+void multiplyMatrix(const float *values)
+{
+    if (values == nullptr) return;
+    Matrix matrix{};
+    std::copy(values, values + 16, matrix.begin());
+    apply(matrix);
+}
 void pushMatrix() { g_current->push_back(g_current->back()); }
 void popMatrix() { if (g_current->size() > 1) g_current->pop_back(); }
 

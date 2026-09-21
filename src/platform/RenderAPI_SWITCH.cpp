@@ -4,6 +4,7 @@
 #include "switch/SwitchRuntimeDebug.h"
 #include <glad/glad.h>
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <unordered_map>
 namespace { int viewport[4]={0,0,1280,720}; }
@@ -17,16 +18,40 @@ int renderGetMaxAnisotropy(){return 1;} int renderGetMaxSamples(){return 1;} boo
 void renderClear(unsigned int mask){GLbitfield bits=0;if(mask&RenderClearMask::Color)bits|=GL_COLOR_BUFFER_BIT;if(mask&RenderClearMask::Depth)bits|=GL_DEPTH_BUFFER_BIT;if(bits)glClear(bits);} void renderFinishGpu(){glFinish();} void renderSubmitFrame(){glFlush();} void renderClearColor(float r,float g,float b,float a){glClearColor(r,g,b,a);} void renderClearDepth(double d){glClearDepth(d);} void renderPolygonOffset(float factor,float units){glPolygonOffset(factor,units);} void renderLineWidth(float width){glLineWidth(width);} void renderViewport(int x,int y,int w,int h){viewport[0]=x;viewport[1]=y;viewport[2]=w;viewport[3]=h;glViewport(x,y,w,h);} void renderGetViewport(int*v){glGetIntegerv(GL_VIEWPORT,v);}
 void renderGetMatrix(RenderMatrixQuery q,float*v){SwitchLegacyRenderer::getMatrix(q,v);} const unsigned char* renderGetString(RenderStringQuery query){GLenum name=GL_VENDOR;if(query==RenderStringQuery::Renderer)name=GL_RENDERER;else if(query==RenderStringQuery::Version)name=GL_VERSION;else if(query==RenderStringQuery::Extensions)name=GL_EXTENSIONS;return glGetString(name);} bool renderSupportsFeature(RenderFeature){return false;} unsigned int renderGetError(){return glGetError();} void renderFogHint(RenderHintMode){} void renderMatrixMode(RenderMatrixMode m){SwitchLegacyRenderer::matrixMode(m);} void renderLoadIdentity(){SwitchLegacyRenderer::loadIdentity();} void renderPushMatrix(){SwitchLegacyRenderer::pushMatrix();} void renderPopMatrix(){SwitchLegacyRenderer::popMatrix();} void renderTranslate(float x,float y,float z){SwitchLegacyRenderer::translate(x,y,z);} void renderRotate(float a,float x,float y,float z){SwitchLegacyRenderer::rotate(a,x,y,z);} void renderScale(float x,float y,float z){SwitchLegacyRenderer::scale(x,y,z);} void renderScaleDouble(double x,double y,double z){SwitchLegacyRenderer::scale(x,y,z);} void renderFrustum(double l,double r,double b,double t,double n,double f){SwitchLegacyRenderer::frustum(l,r,b,t,n,f);} void renderOrtho(double l,double r,double b,double t,double n,double f){SwitchLegacyRenderer::ortho(l,r,b,t,n,f);}
 bool renderCopyFramebufferToBoundTexture(int x,int y,int w,int h){if(w<=0||h<=0)return false;glCopyTexSubImage2D(GL_TEXTURE_2D,0,0,0,x,y,w,h);return glGetError()==GL_NO_ERROR;} void renderSetLegacyPresentationGamma(bool){}
-namespace { std::unordered_map<int,RenderCapturedMesh> displayLists; int compilingList=0; }
+namespace
+{
+struct SwitchDisplayList
+{
+    RenderCapturedMesh mesh;
+    std::array<float, 16> transform{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+};
+std::unordered_map<int, SwitchDisplayList> displayLists;
+std::array<float, 16> savedCompileModelView{};
+int compilingList = 0;
+}
 bool renderCaptureInterleaved(const RenderInterleavedMesh&m,RenderCapturedMesh&o,bool append){if(!m.data||m.count<=0||m.stride<=0)return false;if(!append)o.clear();if(!o.empty()&&(o.stride!=m.stride||o.primitive!=m.primitive))return false;o.stride=m.stride;o.primitive=m.primitive;o.positionShort=m.positionShort;o.hasTexture=m.hasTexture;o.texCoordOffset=m.texCoordOffset;o.hasColor=m.hasColor;o.colorOffset=m.colorOffset;o.hasNormals=m.hasNormals;o.normalOffset=m.normalOffset;o.hasBrightness=m.hasBrightness;o.brightnessOffset=m.brightnessOffset;const auto*src=static_cast<const unsigned char*>(m.data)+(std::size_t)m.first*m.stride;const std::size_t bytes=(std::size_t)m.count*m.stride;const std::size_t old=o.raw.size();o.raw.resize(old+(bytes+3)/4);std::memcpy(reinterpret_cast<unsigned char*>(o.raw.data())+old*4,src,bytes);o.vertexCount+=m.count;return true;}
-bool renderDrawInterleaved(const RenderInterleavedMesh&m){if(compilingList)return renderCaptureInterleaved(m,displayLists[compilingList],true);return SwitchLegacyRenderer::draw(m);} bool renderDrawCaptured(const RenderCapturedMesh&m){if(m.empty())return false;RenderInterleavedMesh view;view.data=m.raw.data();view.stride=m.stride;view.count=m.vertexCount;view.primitive=m.primitive;view.positionShort=m.positionShort;view.hasTexture=m.hasTexture;view.texCoordOffset=m.texCoordOffset;view.hasColor=m.hasColor;view.colorOffset=m.colorOffset;view.hasNormals=m.hasNormals;view.normalOffset=m.normalOffset;view.hasBrightness=m.hasBrightness;view.brightnessOffset=m.brightnessOffset;return renderDrawInterleaved(view);}
+bool renderDrawInterleaved(const RenderInterleavedMesh&m){if(compilingList){SwitchDisplayList& list=displayLists[compilingList];SwitchLegacyRenderer::getMatrix(RenderMatrixQuery::ModelView,list.transform.data());return renderCaptureInterleaved(m,list.mesh,true);}return SwitchLegacyRenderer::draw(m);} bool renderDrawCaptured(const RenderCapturedMesh&m){if(m.empty())return false;RenderInterleavedMesh view;view.data=m.raw.data();view.stride=m.stride;view.count=m.vertexCount;view.primitive=m.primitive;view.positionShort=m.positionShort;view.hasTexture=m.hasTexture;view.texCoordOffset=m.texCoordOffset;view.hasColor=m.hasColor;view.colorOffset=m.colorOffset;view.hasNormals=m.hasNormals;view.normalOffset=m.normalOffset;view.hasBrightness=m.hasBrightness;view.brightnessOffset=m.brightnessOffset;return renderDrawInterleaved(view);}
 
 // The shared renderer still uses legacy retained handles for sky and chunk
 // bookkeeping. Keep a handle namespace until the Switch terrain renderer owns
 // those meshes directly; no desktop GL implementation is pulled into the NRO.
 namespace { int nextDisplayList = 1; int nextQuery = 1; }
 int renderGenerateDisplayLists(int count){const int first=nextDisplayList;nextDisplayList+=count;return first;}
-void renderDeleteDisplayLists(int first,int count){for(int i=0;i<count;++i)displayLists.erase(first+i);} void renderBeginDisplayList(int list){compilingList=list;displayLists[list].clear();} void renderEndDisplayList(){compilingList=0;}
+void renderDeleteDisplayLists(int first,int count){for(int i=0;i<count;++i)displayLists.erase(first+i);}
+void renderBeginDisplayList(int list)
+{
+    compilingList=list;
+    displayLists[list]=SwitchDisplayList{};
+    SwitchLegacyRenderer::getMatrix(RenderMatrixQuery::ModelView,savedCompileModelView.data());
+    SwitchLegacyRenderer::matrixMode(RenderMatrixMode::ModelView);
+    SwitchLegacyRenderer::loadIdentity();
+}
+void renderEndDisplayList()
+{
+    SwitchLegacyRenderer::matrixMode(RenderMatrixMode::ModelView);
+    SwitchLegacyRenderer::loadMatrix(savedCompileModelView.data());
+    compilingList=0;
+}
 void renderCallDisplayList(int list)
 {
     const auto found = displayLists.find(list);
@@ -35,8 +60,11 @@ void renderCallDisplayList(int list)
         switchDebugDisplayListResult(false, false, 0);
         return;
     }
-    const bool drawn = renderDrawCaptured(found->second);
-    switchDebugDisplayListResult(true, drawn, found->second.vertexCount);
+    SwitchLegacyRenderer::pushMatrix();
+    SwitchLegacyRenderer::multiplyMatrix(found->second.transform.data());
+    const bool drawn = renderDrawCaptured(found->second.mesh);
+    SwitchLegacyRenderer::popMatrix();
+    switchDebugDisplayListResult(true, drawn, found->second.mesh.vertexCount);
 }
 void renderCallDisplayLists(int count,const int*lists){for(int i=0;i<count;++i)renderCallDisplayList(lists[i]);}
 void renderGenerateOcclusionQueries(int count,int* queries){while(count--)*queries++=nextQuery++;}

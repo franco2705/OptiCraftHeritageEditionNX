@@ -9,6 +9,8 @@ void color(float red, float green, float blue, float alpha);
 void alphaTest(bool enabled, RenderCompare function = RenderCompare::Greater, float reference = 0.1f);
 void matrixMode(RenderMatrixMode mode);
 void loadIdentity();
+void loadMatrix(const float *values);
+void multiplyMatrix(const float *values);
 void pushMatrix();
 void popMatrix();
 void translate(float x, float y, float z);
