@@ -108,7 +108,7 @@ ChunkProvider::ChunkProvider(World *world, IChunkLoader *ichunkloader, IChunkPro
 	    (asyncRegionLoader != nullptr || asyncAnvilLoader != nullptr))
 	{
 		asyncSavedChunkProbe = asyncRegionLoader == nullptr ? asyncAnvilLoader : nullptr;
-#if PLATFORM_PC_LEGACY || PLATFORM_WII
+#if PLATFORM_PC_LEGACY || PLATFORM_WII || PLATFORM_SWITCH
 		// The worker only builds terrain/cave buffers. Structure discovery,
 		// decoration, Chunk construction, lighting and publication stay on the
 		// game thread: the per-biome BiomeDecorator and the chunk-local
@@ -883,7 +883,7 @@ Chunk *ChunkProvider::provideChunk(int_t i, int_t j)
 	auto it = chunkMap.find(key);
 	if (it == chunkMap.end())
 	{
-#if PLATFORM_ASYNC_CHUNK_GENERATION && PLATFORM_PC_LEGACY
+#if PLATFORM_ASYNC_CHUNK_GENERATION && !PLATFORM_BOUNDED_WORLD
 		if (worldObj == nullptr || !worldObj->findingSpawnPoint)
 		{
 			long_t dcx = static_cast<long_t>(i) - static_cast<long_t>(curChunkX);
