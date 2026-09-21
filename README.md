@@ -164,6 +164,15 @@ is not producing visible chunk sections; nonzero `missing` means retained chunk
 meshes were lost, while nonzero lists with zero draws indicates a GL submission
 failure.
 
+A Switch watchdog additionally detects when the frame counter has not advanced
+for two seconds. It prints the exact last main-thread checkpoint to `stderr`
+(visible from an attached `nxlink -s`) and appends the same report to
+`sdmc:/switch/OptiCraft/.minecraft/switch-watchdog.log`. Tick checkpoints split
+input, chunk-cache configuration, entity updates, world simulation, and texture
+updates, so a frozen on-screen `stage=hand` no longer hides where the following
+frame actually stopped. The watchdog only observes atomics; it never touches or
+generates world data from its diagnostic thread.
+
 ## Homebrew metadata and deployment
 
 Metadata can be overridden while configuring. `SWITCH_ICON` must name an
