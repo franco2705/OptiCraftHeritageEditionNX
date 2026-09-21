@@ -268,7 +268,7 @@
 // certainly cannot afford unbounded memory, and the implication keeps every
 // existing PS2 configuration -- including -DWII_CONSOLE_LOW=ON -- valid.
 #ifndef PLATFORM_BOUNDED_WORLD
-#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_CONSOLE_LOW
+#  if PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH || PLATFORM_CONSOLE_LOW
 #    define PLATFORM_BOUNDED_WORLD 1
 #  else
 #    define PLATFORM_BOUNDED_WORLD 0
