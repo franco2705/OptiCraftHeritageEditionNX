@@ -899,6 +899,12 @@ void Minecraft::run()
 
                 if (lwjgl::Display::isCloseRequested())
                     shutdown();
+#ifdef SWITCH_PLATFORM
+                // Poll the controller before simulation. Polling only from the
+                // post-tick swap leaves the first world tick with stale pad
+                // state and makes a long tick impossible to interrupt/pause.
+                lwjgl::Display::processMessages();
+#endif
 
                 if (isGamePaused && theWorld != nullptr)
                 {
@@ -961,7 +967,7 @@ void Minecraft::run()
 #ifdef SWITCH_PLATFORM
                 {
                     switchDebugCheckpoint("present");
-                    lwjgl::Display::update();
+                    lwjgl::Display::update(false);
                 }
 #else
                     lwjgl::Display::update();

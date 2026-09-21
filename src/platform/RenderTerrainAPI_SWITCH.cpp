@@ -14,8 +14,20 @@ void renderTerrainSetViewerPosition(double, double, double) {}
 void renderTerrainSetFog(RenderFogMode, float, float, float, float, float, float, float) {}
 void renderTerrainSetEarlyDepth(bool) {}
 bool renderTerrainSortOpaqueFaces(const std::vector<int_t>&, std::vector<int_t>&, int, int) { return false; }
-bool renderTerrainBeginPass(int texture, RenderTerrainPass) { renderBindTexture(texture); return true; }
-void renderTerrainEndPass(RenderTerrainPass) {}
+bool renderTerrainBeginPass(int texture, RenderTerrainPass)
+{
+    renderBindTexture(texture);
+    // The retained chunk path converts legacy quads to triangles. Until its
+    // winding is normalized for the core-profile backend, drawing both faces
+    // prevents valid terrain from being discarded while entities (whose model
+    // meshes use a different winding path) remain visible.
+    renderDisable(RenderCapability::CullFace);
+    return true;
+}
+void renderTerrainEndPass(RenderTerrainPass)
+{
+    renderEnable(RenderCapability::CullFace);
+}
 std::size_t renderTerrainLiveBytes() { return 0; }
 std::size_t renderTerrainStagingBytes() { return 0; }
 
