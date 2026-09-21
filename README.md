@@ -135,6 +135,16 @@ The left stick moves and the right stick controls the camera or menu cursor.
 item, `ZR` attacks, `ZL` uses an item, `+` opens the pause menu, and the D-pad
 navigates menus. libnx owns Home-button and applet lifecycle handling.
 
+## Switch preview diagnostics
+
+Preview builds draw two `SWDBG` lines above the HUD while a world is open. The
+first reports the frame, tick, and last world-render phase reached; the second
+reports whether the world/player exist and the duration of the previous
+completed render. If the game stalls, photograph those lines before closing the
+application. Stages such as `chunk-build`, `terrain-opaque`, `terrain-alpha`,
+`entities`, `weather`, `clouds`, and `hand` narrow the stall to one renderer
+phase.
+
 ## Homebrew metadata and deployment
 
 Metadata can be overridden while configuring. `SWITCH_ICON` must name an
