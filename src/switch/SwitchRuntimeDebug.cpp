@@ -17,6 +17,7 @@ std::uint64_t g_displayListsFound = 0;
 std::uint64_t g_displayListsMissing = 0;
 std::uint64_t g_drawCalls = 0;
 std::uint64_t g_vertices = 0;
+
 }
 
 void switchDebugFrameBegin(bool hasWorld, bool hasPlayer)
