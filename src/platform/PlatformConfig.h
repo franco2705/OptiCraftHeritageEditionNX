@@ -87,7 +87,7 @@
 #endif
 
 #ifndef PLATFORM_ASYNC_CHUNK_GENERATION
-#  define PLATFORM_ASYNC_CHUNK_GENERATION (PLATFORM_WII || PLATFORM_PC_LEGACY)
+#  define PLATFORM_ASYNC_CHUNK_GENERATION (PLATFORM_WII || PLATFORM_SWITCH || PLATFORM_PC_LEGACY)
 #endif
 
 // OptiFine custom animations (/anim/*.properties, custom_terrain_N.png,

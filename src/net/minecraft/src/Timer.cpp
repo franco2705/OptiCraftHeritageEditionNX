@@ -71,9 +71,12 @@ void Timer::updateTimer()
 	{
 		elapsedTicks = 1;
 	}
-#elif defined(WII_PLATFORM)
-	// Bound catch-up work so one slow chunk or mesh frame cannot queue enough
-	// simulation work to cause a self-sustaining sequence of long frames.
+#elif defined(WII_PLATFORM) || defined(SWITCH_PLATFORM)
+	// Bound catch-up work so one slow chunk, world-generation, or mesh frame
+	// cannot queue enough simulation work to cause a self-sustaining sequence
+	// of long frames. This is also important on Switch: controller events are
+	// consumed by runTick(), so an unbounded catch-up burst makes the apparent
+	// freeze impossible to pause even though input continues to be polled.
 	if (elapsedTicks > 2)
 	{
 		elapsedTicks = 2;

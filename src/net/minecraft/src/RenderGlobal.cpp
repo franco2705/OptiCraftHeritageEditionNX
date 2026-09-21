@@ -2183,6 +2183,14 @@ bool RenderGlobal::updateRenderers(EntityLiving *entityliving, bool flag)
 
 	int_t requestedUpdateLimit = std::max(1, Config::getUpdatesPerFrame());
 	if (Config::isDynamicUpdates() && !isRendererUpdateMoving(entityliving)) requestedUpdateLimit = requestedUpdateLimit * 3;
+#if PLATFORM_SWITCH
+	// Switch still uses the whole-section display-list builder rather than the
+	// incremental console mesh scheduler. Dynamic Updates can otherwise triple
+	// the configured value and rebuild several 16x16x16 sections consecutively
+	// on the render/input thread, producing the apparent world-entry lockup.
+	requestedUpdateLimit = std::min(requestedUpdateLimit,
+		static_cast<int_t>(PLATFORM_MAX_RENDERER_UPDATES_PER_FRAME));
+#endif
 
 #if PLATFORM_PC_LEGACY
 	pcLegacyRunMeshScheduler(
