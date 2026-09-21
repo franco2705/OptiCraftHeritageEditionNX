@@ -598,13 +598,5 @@ void Config::log(const std::string &s) { dbg(s); }
 
 void Config::sleep(long ms)
 {
-#if defined(PS2_PLATFORM)
-	(void)ms;
-#elif defined(WII_PLATFORM)
-	// Real sleep on this console: PlatformCompat::delay yields to libogc's
-	// scheduler, so audio and USB keep running while we wait.
-	PlatformCompat::delay((uint32_t)ms);
-#else
-	SDL_Delay((Uint32)ms);
-#endif
+	PlatformCompat::delay(static_cast<uint32_t>(ms));
 }

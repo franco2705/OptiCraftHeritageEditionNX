@@ -345,15 +345,19 @@ void renderScaleDouble(double x, double y, double z);
 void renderFrustum(double left, double right, double bottom, double top, double nearValue, double farValue);
 void renderOrtho(double left, double right, double bottom, double top, double nearValue, double farValue);
 
-#if PLATFORM_PC
-// Desktop-only retained-mode compatibility used by the original 1.2.5 GL renderer.
+#if PLATFORM_PC || PLATFORM_SWITCH
+// Retained-mode compatibility used by the original 1.2.5 renderer. The
+// Switch backend keeps a lightweight handle namespace while its native terrain
+// path is brought up.
 int renderGenerateDisplayLists(int count);
 void renderDeleteDisplayLists(int first, int count);
 void renderBeginDisplayList(int list);
 void renderEndDisplayList();
 void renderCallDisplayList(int list);
 void renderCallDisplayLists(int count, const int* lists);
+#endif
 
+#if PLATFORM_PC
 // Desktop Advanced OpenGL occlusion queries. Native console terrain never uses them.
 void renderGenerateOcclusionQueries(int count, int* queries);
 void renderBeginOcclusionQuery(int query);
