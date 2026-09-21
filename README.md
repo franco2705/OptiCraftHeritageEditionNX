@@ -135,6 +135,11 @@ The left stick moves and the right stick controls the camera or menu cursor.
 item, `ZR` attacks, `ZL` uses an item, `+` opens the pause menu, and the D-pad
 navigates menus. libnx owns Home-button and applet lifecycle handling.
 
+World entry deliberately limits simulation catch-up to two ticks per rendered
+frame. A slow initial chunk-generation frame therefore degrades temporarily to
+slow motion instead of queuing a burst of ten expensive ticks that can look
+like a permanent freeze and delay the pause-menu input.
+
 ## Switch preview diagnostics
 
 Preview builds draw three `SWDBG` lines above the HUD while a world is open. The
