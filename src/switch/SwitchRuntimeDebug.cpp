@@ -2,13 +2,18 @@
 
 #include "platform/Diagnostics.h"
 
+#include <atomic>
+#include <chrono>
 #include <cstdio>
+#include <mutex>
+#include <thread>
 
 namespace
 {
-const char *g_stage = "boot";
-std::uint64_t g_frame = 0;
-std::uint64_t g_ticks = 0;
+std::atomic<const char *> g_stage{"boot"};
+std::atomic<std::uint64_t> g_frame{0};
+std::atomic<std::uint64_t> g_ticks{0};
+std::once_flag g_watchdogOnce;
 std::uint64_t g_lastWorldRenderMicros = 0;
 bool g_hasWorld = false;
 bool g_hasPlayer = false;
@@ -17,11 +22,62 @@ std::uint64_t g_displayListsFound = 0;
 std::uint64_t g_displayListsMissing = 0;
 std::uint64_t g_drawCalls = 0;
 std::uint64_t g_vertices = 0;
+
+void reportStall(std::uint64_t frame, std::uint64_t ticks, const char *stage)
+{
+    char line[192]{};
+    std::snprintf(line, sizeof(line),
+        "[SWDBG][STALL] frame=%llu ticks=%llu stage=%s (no new frame for 2 seconds)\n",
+        static_cast<unsigned long long>(frame),
+        static_cast<unsigned long long>(ticks), stage ? stage : "(null)");
+    std::fputs(line, stderr);
+    std::fflush(stderr);
+
+    // This file survives a forced close or fatal error and can be inspected
+    // directly from the SD card when nxlink was not attached.
+    if (FILE *file = std::fopen("sdmc:/switch/OptiCraft/.minecraft/switch-watchdog.log", "a"))
+    {
+        std::fputs(line, file);
+        std::fclose(file);
+    }
+}
+
+void startWatchdog()
+{
+    std::call_once(g_watchdogOnce, []
+    {
+        std::thread([]
+        {
+            std::uint64_t previousFrame = g_frame.load(std::memory_order_relaxed);
+            int unchangedSamples = 0;
+            bool reported = false;
+            for (;;)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                const std::uint64_t frame = g_frame.load(std::memory_order_relaxed);
+                if (frame != previousFrame)
+                {
+                    previousFrame = frame;
+                    unchangedSamples = 0;
+                    reported = false;
+                    continue;
+                }
+                if (++unchangedSamples >= 4 && !reported)
+                {
+                    reportStall(frame, g_ticks.load(std::memory_order_relaxed),
+                        g_stage.load(std::memory_order_relaxed));
+                    reported = true;
+                }
+            }
+        }).detach();
+    });
+}
 }
 
 void switchDebugFrameBegin(bool hasWorld, bool hasPlayer)
 {
-    ++g_frame;
+    startWatchdog();
+    g_frame.fetch_add(1, std::memory_order_relaxed);
     g_hasWorld = hasWorld;
     g_hasPlayer = hasPlayer;
     g_terrainListsRequested = 0;
@@ -29,7 +85,7 @@ void switchDebugFrameBegin(bool hasWorld, bool hasPlayer)
     g_displayListsMissing = 0;
     g_drawCalls = 0;
     g_vertices = 0;
-    g_stage = "frame-begin";
+    g_stage.store("frame-begin", std::memory_order_relaxed);
 }
 
 void switchDebugTerrainListsRequested(int count)
@@ -56,19 +112,19 @@ void switchDebugDisplayListResult(bool found, bool drawn, int vertices)
 
 void switchDebugCheckpoint(const char *stage)
 {
-    g_stage = stage ? stage : "(null)";
+    g_stage.store(stage ? stage : "(null)", std::memory_order_relaxed);
 }
 
 void switchDebugWorldRenderComplete(std::uint64_t elapsedMicros)
 {
     g_lastWorldRenderMicros = elapsedMicros;
-    g_stage = "world-done";
+    g_stage.store("world-done", std::memory_order_relaxed);
 }
 
 void switchDebugTickComplete()
 {
-    ++g_ticks;
-    g_stage = "tick-done";
+    g_ticks.fetch_add(1, std::memory_order_relaxed);
+    g_stage.store("tick-done", std::memory_order_relaxed);
 }
 
 std::string switchDebugLine(int line)
@@ -84,8 +140,9 @@ std::string switchDebugLine(int line)
     {
         case 0:
             std::snprintf(text, sizeof(text), "SWDBG f=%llu t=%llu stage=%s",
-                static_cast<unsigned long long>(g_frame),
-                static_cast<unsigned long long>(g_ticks), g_stage);
+                static_cast<unsigned long long>(g_frame.load(std::memory_order_relaxed)),
+                static_cast<unsigned long long>(g_ticks.load(std::memory_order_relaxed)),
+                g_stage.load(std::memory_order_relaxed));
             break;
         case 1:
             std::snprintf(text, sizeof(text), "world=%d player=%d render=%llu us heap=%s",

@@ -924,6 +924,9 @@ void Minecraft::run()
                     ticksRan++;
                     try
                     {
+#ifdef SWITCH_PLATFORM
+                        switchDebugCheckpoint("tick-begin");
+#endif
                         runTick();
 #ifdef SWITCH_PLATFORM
                         switchDebugTickComplete();
@@ -1637,16 +1640,25 @@ void Minecraft::runTick()
     #endif
 
     long_t clientPhaseStartNs = System::nanoTime();
+#ifdef SWITCH_PLATFORM
+    switchDebugCheckpoint("tick-stats");
+#endif
     statFileWriter->updateStatsSync();
     ClientProfiler::tickPhase("stats", System::nanoTime() - clientPhaseStartNs);
 
     clientPhaseStartNs = System::nanoTime();
+#ifdef SWITCH_PLATFORM
+    switchDebugCheckpoint("tick-target");
+#endif
     ingameGUI->updateTick();
     entityRenderer->getMouseOver(1.0f);
     ClientProfiler::tickPhase("mouseOver", System::nanoTime() - clientPhaseStartNs);
 
     if (thePlayer != nullptr)
     {
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("tick-chunk-cache");
+#endif
         clientPhaseStartNs = System::nanoTime();
         IChunkProvider *ichunkprovider = theWorld->getIChunkProvider();
         int_t jv = MathHelper::floor_float((float)thePlayer->posX) >> 4;
@@ -1657,6 +1669,9 @@ void Minecraft::runTick()
 
     if (!isGamePaused && theWorld != nullptr)
     {
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("tick-controller");
+#endif
         clientPhaseStartNs = System::nanoTime();
         playerController->updateController();
         ClientProfiler::tickPhase("controller", System::nanoTime() - clientPhaseStartNs);
@@ -1670,6 +1685,9 @@ void Minecraft::runTick()
 
     if (!isGamePaused)
     {
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("tick-textures");
+#endif
         clientPhaseStartNs = System::nanoTime();
         static int_t s_dynamicTexturePhase = 0;
         const int_t everyN = PLATFORM_DYNAMIC_TEXTURE_INTERVAL_TICKS;
@@ -1713,6 +1731,9 @@ void Minecraft::runTick()
 
     if (currentScreen == nullptr || currentScreen->field_948_f)
     {
+#ifdef SWITCH_PLATFORM
+        switchDebugCheckpoint("tick-input");
+#endif
         clientPhaseStartNs = System::nanoTime();
         while (lwjgl::Mouse::next())
         {
@@ -1881,6 +1902,9 @@ void Minecraft::runTick()
             joinPlayerCounter++;
             if (joinPlayerCounter == 30)
             {
+#ifdef SWITCH_PLATFORM
+                switchDebugCheckpoint("tick-join-chunks");
+#endif
                 joinPlayerCounter = 0;
                 clientPhaseStartNs = System::nanoTime();
                 theWorld->joinEntityInSurroundings(thePlayer);
@@ -1896,6 +1920,9 @@ void Minecraft::runTick()
 
         if (!isGamePaused)
         {
+#ifdef SWITCH_PLATFORM
+            switchDebugCheckpoint("tick-renderer-update");
+#endif
             clientPhaseStartNs = System::nanoTime();
             entityRenderer->updateRenderer();
             ClientProfiler::tickPhase("erTick", System::nanoTime() - clientPhaseStartNs);
@@ -1907,6 +1934,9 @@ void Minecraft::runTick()
             if (theWorld->field_27172_i > 0)
                 theWorld->field_27172_i--;
             clientPhaseStartNs = System::nanoTime();
+#ifdef SWITCH_PLATFORM
+            switchDebugCheckpoint("tick-entities");
+#endif
             theWorld->updateEntities();
             ClientProfiler::tickPhase("entities", System::nanoTime() - clientPhaseStartNs);
         }
@@ -1914,6 +1944,9 @@ void Minecraft::runTick()
         {
             theWorld->setAllowedMobSpawns(theWorld->difficultySetting > 0, true);
             clientPhaseStartNs = System::nanoTime();
+#ifdef SWITCH_PLATFORM
+            switchDebugCheckpoint("tick-world");
+#endif
             theWorld->tick();
             ClientProfiler::tickPhase("worldTick", System::nanoTime() - clientPhaseStartNs);
         }
