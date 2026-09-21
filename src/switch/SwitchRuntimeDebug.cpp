@@ -23,55 +23,6 @@ std::uint64_t g_displayListsMissing = 0;
 std::uint64_t g_drawCalls = 0;
 std::uint64_t g_vertices = 0;
 
-void reportStall(std::uint64_t frame, std::uint64_t ticks, const char *stage)
-{
-    char line[192]{};
-    std::snprintf(line, sizeof(line),
-        "[SWDBG][STALL] frame=%llu ticks=%llu stage=%s (no new frame for 2 seconds)\n",
-        static_cast<unsigned long long>(frame),
-        static_cast<unsigned long long>(ticks), stage ? stage : "(null)");
-    std::fputs(line, stderr);
-    std::fflush(stderr);
-
-    // This file survives a forced close or fatal error and can be inspected
-    // directly from the SD card when nxlink was not attached.
-    if (FILE *file = std::fopen("sdmc:/switch/OptiCraft/.minecraft/switch-watchdog.log", "a"))
-    {
-        std::fputs(line, file);
-        std::fclose(file);
-    }
-}
-
-void startWatchdog()
-{
-    std::call_once(g_watchdogOnce, []
-    {
-        std::thread([]
-        {
-            std::uint64_t previousFrame = g_frame.load(std::memory_order_relaxed);
-            int unchangedSamples = 0;
-            bool reported = false;
-            for (;;)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                const std::uint64_t frame = g_frame.load(std::memory_order_relaxed);
-                if (frame != previousFrame)
-                {
-                    previousFrame = frame;
-                    unchangedSamples = 0;
-                    reported = false;
-                    continue;
-                }
-                if (++unchangedSamples >= 4 && !reported)
-                {
-                    reportStall(frame, g_ticks.load(std::memory_order_relaxed),
-                        g_stage.load(std::memory_order_relaxed));
-                    reported = true;
-                }
-            }
-        }).detach();
-    });
-}
 }
 
 void switchDebugFrameBegin(bool hasWorld, bool hasPlayer)
