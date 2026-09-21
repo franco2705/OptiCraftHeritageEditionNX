@@ -135,6 +135,21 @@ The left stick moves and the right stick controls the camera or menu cursor.
 item, `ZR` attacks, `ZL` uses an item, `+` opens the pause menu, and the D-pad
 navigates menus. libnx owns Home-button and applet lifecycle handling.
 
+World entry deliberately limits simulation catch-up to two ticks per rendered
+frame. A slow initial chunk-generation frame therefore degrades temporarily to
+slow motion instead of queuing a burst of ten expensive ticks that can look
+like a permanent freeze and delay the pause-menu input.
+
+Switch also limits the legacy whole-section terrain builder to one section per
+frame. This hard ceiling applies even when OptiFine Dynamic Updates is enabled;
+without it, the setting triples the requested rebuild count while the player is
+stationary and blocks rendering and input during initial world meshing.
+
+The compatibility renderer keeps the terrain and lightmap texture matrices
+separate, matching fixed-function OpenGL. This prevents the lightmap transform
+on texture unit one from remapping the terrain atlas on texture unit zero and
+leaving submitted world geometry black or effectively invisible.
+
 ## Switch preview diagnostics
 
 Preview builds draw three `SWDBG` lines above the HUD while a world is open. The
@@ -148,6 +163,15 @@ missing, successful draw calls, and submitted vertices. A world with `terrain=0`
 is not producing visible chunk sections; nonzero `missing` means retained chunk
 meshes were lost, while nonzero lists with zero draws indicates a GL submission
 failure.
+
+A Switch watchdog additionally detects when the frame counter has not advanced
+for two seconds. It prints the exact last main-thread checkpoint to `stderr`
+(visible from an attached `nxlink -s`) and appends the same report to
+`sdmc:/switch/OptiCraft/.minecraft/switch-watchdog.log`. Tick checkpoints split
+input, chunk-cache configuration, entity updates, world simulation, and texture
+updates, so a frozen on-screen `stage=hand` no longer hides where the following
+frame actually stopped. The watchdog only observes atomics; it never touches or
+generates world data from its diagnostic thread.
 
 ## Homebrew metadata and deployment
 
