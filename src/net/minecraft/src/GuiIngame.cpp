@@ -1,4 +1,7 @@
 #include "GuiIngame.h"
+#ifdef SWITCH_PLATFORM
+#include "switch/SwitchRuntimeDebug.h"
+#endif
 #include "platform/PlatformTuning.h"
 #include "platform/Profiler.h"
 #include "java/String.h"
@@ -939,6 +942,13 @@ void GuiIngame::renderGameOverlay(float_t partialTick, bool showDebug, int_t mou
 #endif
 	LegacyControlTooltipHud::render(mc, sw, sh);
 	LegacyTipHud::render(mc, sw, sh);
+#ifdef SWITCH_PLATFORM
+	// Always visible in preview builds: if the following frame stalls, the last
+	// presented frame identifies the most recently completed phase and timing.
+	resetOverlayGLState();
+	fr->drawStringWithShadow(switchDebugLine(0), 2, 136, 0xffff55);
+	fr->drawStringWithShadow(switchDebugLine(1), 2, 146, 0xffffff);
+#endif
 #if PLATFORM_PROFILE_RENDER_PHASES
 	platformProfileRenderPhaseEnd(cycHudHints, PlatformRenderPhase::HudHints);
 #endif
