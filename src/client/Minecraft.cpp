@@ -77,6 +77,9 @@
 #include "net/minecraft/src/GuiGameOver.h"
 #include "net/minecraft/src/GuiIngame.h"
 #include "net/minecraft/src/GuiIngameMenu.h"
+#ifdef SWITCH_PLATFORM
+#include "switch/SwitchRuntimeDebug.h"
+#endif
 #include "net/minecraft/src/GuiInventory.h"
 #include "net/minecraft/src/StringTranslate.h"
 #include "net/minecraft/src/GuiContainerCreative.h"
@@ -884,6 +887,9 @@ void Minecraft::run()
         {
             try
             {
+#ifdef SWITCH_PLATFORM
+                switchDebugFrameBegin(theWorld != nullptr, thePlayer != nullptr);
+#endif
                 const long_t clientFrameStartNs = System::nanoTime();
                 long_t clientRenderNs = 0;
                 ClientProfiler::frameBegin();
@@ -893,6 +899,12 @@ void Minecraft::run()
 
                 if (lwjgl::Display::isCloseRequested())
                     shutdown();
+#ifdef SWITCH_PLATFORM
+                // Poll the controller before simulation. Polling only from the
+                // post-tick swap leaves the first world tick with stale pad
+                // state and makes a long tick impossible to interrupt/pause.
+                lwjgl::Display::processMessages();
+#endif
 
                 if (isGamePaused && theWorld != nullptr)
                 {
@@ -913,6 +925,9 @@ void Minecraft::run()
                     try
                     {
                         runTick();
+#ifdef SWITCH_PLATFORM
+                        switchDebugTickComplete();
+#endif
                     }
                     catch (const MinecraftException &)
                     {
@@ -937,12 +952,26 @@ void Minecraft::run()
 
                 const long_t clientLightingStartNs = System::nanoTime();
                 if (theWorld != nullptr)
+#ifdef SWITCH_PLATFORM
+                {
+                    switchDebugCheckpoint("lighting");
                     theWorld->updatingLighting();
+                }
+#else
+                    theWorld->updatingLighting();
+#endif
                 ClientProfiler::lighting(System::nanoTime() - clientLightingStartNs);
 
                 const long_t swapStartNs = System::nanoTime();
                 if (!lwjgl::Keyboard::isKeyDown(0x41))
+#ifdef SWITCH_PLATFORM
+                {
+                    switchDebugCheckpoint("present");
+                    lwjgl::Display::update(false);
+                }
+#else
                     lwjgl::Display::update();
+#endif
                 ClientProfiler::displayUpdate(System::nanoTime() - swapStartNs);
                 const long_t swapEndNs = System::nanoTime();
                 cpuGpuSwapNs += swapEndNs - swapStartNs;
@@ -962,8 +991,14 @@ void Minecraft::run()
                         validateProcessHeap("before world render");
 
                     const long_t clientRenderStartNs = System::nanoTime();
+#ifdef SWITCH_PLATFORM
+                    switchDebugCheckpoint("camera-render");
+#endif
                     entityRenderer->updateCameraAndRender(timer->renderPartialTicks);
                     clientRenderNs = System::nanoTime() - clientRenderStartNs;
+#ifdef SWITCH_PLATFORM
+                    switchDebugWorldRenderComplete(static_cast<std::uint64_t>(clientRenderNs / 1000));
+#endif
                     ClientProfiler::render(clientRenderNs);
 
                     if (validateHeapThisFrame)

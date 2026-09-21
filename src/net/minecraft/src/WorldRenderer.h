@@ -48,13 +48,17 @@ public:
 	// calling releaseDisplayListsForCache() directly, so its guard is unchanged.
 	bool holdsRecordedTerrain() const;
 #endif
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_SWITCH
 	void callOcclusionQueryList();
 	int_t getGLCallListForPass(int_t pass);
 #endif
 #if defined(WII_PLATFORM) || defined(PS2_PLATFORM)
 	void renderExtraTerrainMeshes(int_t pass);
 #endif
+	// Every backend can receive lighting dirties and urgent rebuild requests;
+	// only incremental terrain backends expose the build-progress helpers below.
+	void markDirtyFromLighting();
+	bool urgentRebuild = false;
 #if defined(WII_PLATFORM) || defined(PS2_PLATFORM) || PLATFORM_PC_LEGACY
 	bool isTerrainBuildInProgress() const;
 #ifdef PS2_PLATFORM
@@ -62,14 +66,6 @@ public:
 	// stays dirty and restarts from scratch on a later scheduler step.
 	void abandonTerrainBuild();
 #endif
-	// A dirty mark caused by a light value change. With
-	// PLATFORM_COALESCE_MESH_REBUILDS an active build keeps going and is
-	// rebuilt once more after it completes, instead of restarting on every
-	// frame of a light propagation (a torch is several frames of them).
-	void markDirtyFromLighting();
-	// Set by RenderGlobal for a block change next to the player; the scheduler
-	// runs these ahead of streaming work and to completion.
-	bool urgentRebuild = false;
 #if PLATFORM_PS2 && MC_LOG_LEVEL >= 2
 	// Monotonic microseconds at the edit that set urgentRebuild; the urgent lane
 	// logs the edit-to-publish latency against it.
@@ -168,12 +164,12 @@ public:
 #endif
 	bool isVisible;
 	bool isInFrustum;
-#if PLATFORM_PC || PLATFORM_PS2
+#if PLATFORM_PC || PLATFORM_PS2 || PLATFORM_SWITCH
 	// Stronger than isInFrustum: PS2 uses it for its clip fast path and desktop
 	// Fancy Occlusion uses it to avoid querying boxes that cross a frustum plane.
 	bool isFullyInFrustum;
 #endif
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_SWITCH
 	bool isVisibleFromPosition;
 	double visibleFromX;
 	double visibleFromY;
@@ -213,7 +209,7 @@ public:
 #endif
 
 private:
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_SWITCH
 	int_t glRenderList;
 	bool needsOcclusionBoxUpdate;
 	void updateOcclusionBox();
