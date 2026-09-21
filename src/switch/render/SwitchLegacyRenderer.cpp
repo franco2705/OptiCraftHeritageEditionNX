@@ -156,6 +156,10 @@ bool draw(const RenderInterleavedMesh &mesh)
 {
     const GLenum mode = primitive(mesh.primitive);
     if (!mesh.data || mesh.stride <= 0 || mesh.count <= 0 || mode == 0 || !initialize()) return false;
+    // Attribute this return value to this submission. State setup elsewhere may
+    // have left a diagnostic error pending; without draining it, a successful
+    // terrain draw is incorrectly reported as failed.
+    while (glGetError() != GL_NO_ERROR) {}
     const auto *bytes = static_cast<const unsigned char *>(mesh.data) +
                         static_cast<std::size_t>(mesh.first) * mesh.stride;
     glUseProgram(g_program);
