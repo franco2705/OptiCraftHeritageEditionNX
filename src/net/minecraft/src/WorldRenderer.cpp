@@ -731,6 +731,24 @@ int_t WorldRenderer::getGLCallListForPass(int_t pass)
 }
 #endif
 
+#if PLATFORM_SWITCH
+bool WorldRenderer::isTerrainBuildInProgress() const
+{
+	// Switch currently builds one complete retained mesh per updateRenderer()
+	// call. The shared mesh scheduler still needs this query, but there is no
+	// partially built section to prioritize on the following frame.
+	return false;
+}
+
+bool WorldRenderer::lastTerrainBuildStepDidWork() const
+{
+	// A synchronous Switch update is one charged scheduler step. Incremental
+	// backends override this with their real per-step state so generation-gate
+	// probes do not consume the frame budget.
+	return true;
+}
+#endif
+
 
 bool WorldRenderer::skipAllRenderPasses()
 {

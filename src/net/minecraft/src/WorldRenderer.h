@@ -59,7 +59,7 @@ public:
 	// only incremental terrain backends expose the build-progress helpers below.
 	void markDirtyFromLighting();
 	bool urgentRebuild = false;
-#if defined(WII_PLATFORM) || defined(PS2_PLATFORM) || PLATFORM_PC_LEGACY
+#if defined(WII_PLATFORM) || defined(PS2_PLATFORM) || PLATFORM_PC_LEGACY || PLATFORM_SWITCH
 	bool isTerrainBuildInProgress() const;
 #ifdef PS2_PLATFORM
 	// Drops an in-flight build and returns its staging lease. The renderer
@@ -75,7 +75,7 @@ public:
 	unsigned int ps2BuildRestarts = 0;
 #endif
 	bool lastTerrainBuildStepDidWork() const;
-#if PLATFORM_PC_LEGACY || PLATFORM_PS2 || PLATFORM_WII
+#if PLATFORM_PC_LEGACY || PLATFORM_PS2 || PLATFORM_WII || PLATFORM_SWITCH
 	bool hasPublishedTerrain() const { return isInitialized; }
 #endif
 #if PLATFORM_PC_LEGACY
