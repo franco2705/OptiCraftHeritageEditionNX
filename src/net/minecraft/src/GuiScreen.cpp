@@ -12,7 +12,7 @@
 #include "pc/lwjgl/Mouse.h"
 #include "platform/PlatformTuning.h"
 #include "platform/Input.h"
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if PLATFORM_PC && !PLATFORM_SWITCH
 #include "SDL_clipboard.h"
 #endif
 #if PLATFORM_PS2 || PLATFORM_WII
@@ -192,7 +192,7 @@ void GuiScreen::keyTyped(char_t c, int_t key)
 jstring GuiScreen::getClipboardString()
 {
 	// SDL clipboard
-#if !PLATFORM_PS2 && !PLATFORM_WII
+	#if PLATFORM_PC && !PLATFORM_SWITCH
 	char *text = SDL_GetClipboardText();
 	if (text)
 	{
@@ -206,7 +206,7 @@ jstring GuiScreen::getClipboardString()
 
 void GuiScreen::setClipboardString(const std::string &text)
 {
-#if !PLATFORM_PS2 && !PLATFORM_WII
+	#if PLATFORM_PC && !PLATFORM_SWITCH
 	SDL_SetClipboardText(text.c_str());
 #else
 	(void)text;

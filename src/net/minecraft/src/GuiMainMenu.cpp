@@ -250,7 +250,12 @@ void GuiMainMenu::initGui()
     viewportTexture = -1;
     legacyPanoramaAvailable = mc->gameSettings != nullptr && mc->gameSettings->legacyUI &&
         mc->renderEngine != nullptr && mc->renderEngine->hasResource(legacyPanoramaResourcePath());
-#if !PLATFORM_PS2 && !PLATFORM_WII
+#if !PLATFORM_PS2 && !PLATFORM_WII && !PLATFORM_SWITCH
+    // The blur path repeatedly copies the current framebuffer into this
+    // texture. The early Switch core-profile backend does not yet provide the
+    // complete framebuffer-copy state required by that path; using it can hang
+    // or terminate Mesa shortly after the first main-menu frame. The direct
+    // panorama fallback below renders the same scene without feedback copies.
     if (!legacyPanoramaAvailable)
     {
         BufferedImage viewportImage(256, 256);

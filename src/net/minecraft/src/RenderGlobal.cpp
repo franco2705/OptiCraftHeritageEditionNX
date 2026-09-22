@@ -64,7 +64,7 @@
 #include "Frustrum.h"
 #include "GameSettings.h"
 #include "legacy/LegacyLook.h"
-#if PLATFORM_PC
+#if PLATFORM_PC || PLATFORM_SWITCH
 #include "GLAllocation.h"
 #endif
 #include "GuiIngame.h"
